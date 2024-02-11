@@ -1,14 +1,16 @@
 # playground
-Znajdziesz tutaj projekty teamu Rakieta
+Znajdziesz tutaj projekty teamu Rakieta. Każdy projekt jest w swoim folderze wewnątrz folderu 
+[`projects/`](./projects/).
 
 
 ## Jak używać repo
-Cheatsheet: [HOW_TO_GIT.md](./HOW_TO_GIT.md)
+Cheatsheet: [HOW_TO_GIT.md](./docs/HOW_TO_GIT.md)
 
 - Stwórz swój branch
-- Stwórz folder z nazwą projektu
-- Pushuj swoje zmiany na swój branch
+- Commituj i pushuj swoje zmiany na swoim branchu
 - Stwórz pull request do master branch
 - Poczekaj na feedback
 - Kiedy dostaniesz zieloną okejke, zmerguj go do master branch
 
+## Jak robić moduł
+Opisano z przykładami w [HOW_TO_MODULE.md](./docs/HOW_TO_MODULE.md)
