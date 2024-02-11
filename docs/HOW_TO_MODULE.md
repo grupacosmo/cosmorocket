@@ -11,7 +11,7 @@
 7. W pliku `main.cpp` zaimportuj plik `.hpp` i użyj zadeklarowanych metod żeby przetestować czy wszystko działa
 
 Jeżeli twój projekt nie jest częścią kodu głównego mikrokontrolera rakiety, stwórz w folderze 
-[`projects/`](./projects/) folder o nazwie twojego projektu i tam umieść pliki.
+[`projects/`](../projects/) folder o nazwie twojego projektu i tam umieść pliki.
 
 ## Przykład
 
