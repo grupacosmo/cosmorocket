@@ -6,9 +6,12 @@
 2. Obierz prostą nazwę dla twojej funkcjonalności (np. `bme`)
 3. Stwórz plik `.hpp` w folderze `include/` o wybranej nazwie (np. `bme.hpp`)
 4. Stwórz plik `.cpp` w folderze `src/` o wybranej nazwie (np. `bme.cpp`)
-5. W pliku `.hpp` zadeklaruj metody, które będą pozwolą na korzystanie z twojej funkcjonalności
+5. W pliku `.hpp` zadeklaruj metody, które pozwolą na korzystanie z twojej funkcjonalności
 6. W pliku `.cpp` zaimplementuj metody zadeklarowane w pliku `.hpp`
 7. W pliku `main.cpp` zaimportuj plik `.hpp` i użyj zadeklarowanych metod żeby przetestować czy wszystko działa
+
+Jeżeli twój projekt nie jest częścią kodu głównego mikrokontrolera rakiety, stwórz w folderze 
+[`projects/`](./projects/) folder o nazwie twojego projektu i tam umieść pliki.
 
 ## Przykład
 
