@@ -1,14 +1,25 @@
-#include <Arduino.h>
+// #include <Arduino.h>
 
-int x;
+// // Definicja pinu diody LED
+// const int buzzPin = 25;
+// const int potPin =32 ;
+// int val ;
+// void setup() {
+//   // Ustawienie pinu diody LED jako wyjście
+//   pinMode(buzzPin, OUTPUT);
+//   pinMode(potPin , INPUT);
+//   Serial.begin(9600);
+// }
 
-void setup() {
-  Serial.begin(9600);
-  x = 0;
-}
+// void loop() {
+  
 
-void loop() {
-  Serial.printf("X = %d \n", x);
-  x = x + 1;
-  delay(100);
-}
+  
+//   val=analogRead(potPin);
+//   Serial.println(val);
+  
+
+//   // Włączenie diody LED
+//   analogWrite(buzzPin, val/16);
+//  delay(1000);
+// }
