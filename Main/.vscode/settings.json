@@ -10,5 +10,6 @@
           "editor.formatOnSave": true // Automatically format C++ files when saving
      },
      "C_Cpp.clang_format_style": "file", // Use the .clang-format file in your project (if present) or default style
-     "C_Cpp.clang_format_fallbackStyle": "Google" // Fallback style if .clang-format file is not found
-}
+     "C_Cpp.clang_format_fallbackStyle": "Google", // Fallback style if .clang-format file is not found
+     "editor.formatOnSave": true // Automatically format code when saving
+    }
