@@ -1,13 +1,16 @@
 #pragma once
-
+namespace bmp {
 //wymaga ustawienia Wire.begin(SDA_PIN, SCL_PIN) wcześniej
-void bmp_begin();
+void begin();
 
-//temperatura w Celsjuszach
-float bmp_getTemp();
+struct Data {
+  float temperature;
+  float pressure;
+  float altitude;
 
-//Ciśnienie w paskalach
-float bmp_getPress();
+  float get_as_hpa();
+};
 
-//przybliżona wysokość nad poziomem morza | w bmp.cpp można polepszyć szacunki zmieniając SEALEVELPRESSURE_HPA
-float bmp_getAlt();
+Data measurements();
+void pretty_print();
+}
