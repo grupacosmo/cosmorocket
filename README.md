@@ -1,6 +1,3 @@
-# playground
-Znajdziesz tutaj projekty teamu Rakieta. Każdy projekt jest w swoim folderze wewnątrz folderu 
-[`projects/`](./projects/).
 
 
 ## Jak używać repo
