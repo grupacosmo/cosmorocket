@@ -5,16 +5,16 @@
 namespace memory {
 
 struct Config {
-  int intValue;
-  float floatValue;
-  char stringValue[50];
+    int intValue;
+    float floatValue;
+    char stringValue[50];
 };
 
 inline Config config;
 
 void init();
-void save_config(Config&);
-void load_config(Config&);
+void save_config(Config &);
+void load_config(Config &);
 void print_data();
 
-}  // namespace memory
+} // namespace memory
