@@ -17,8 +17,8 @@ Adafruit_BMP280 bmp_obj;
 void init() {
     if (!bmp_obj.begin(CHIP_ADDR, CHIP_BME)) {
         Serial.println("Viable sensor BMP280 not found, check wiring!");
-        while (1)
-            ;
+        for (;;) {
+        }
     }
 }
 
