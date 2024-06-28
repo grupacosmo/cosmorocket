@@ -1,6 +1,6 @@
 #include <EEPROM.h>
 
-#define MEMORY_SIZE 512
+constexpr std::size_t MEMORY_SIZE = 512;
 
 namespace memory {
 
