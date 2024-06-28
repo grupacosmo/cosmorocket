@@ -5,6 +5,7 @@
 #include "gps.h"
 #include "led.h"
 #include "memory.h"
+#include "lora.h"
 
 #define SDA 21
 #define SCL 22
@@ -24,6 +25,8 @@ void log(void *pvParameters) {
                     gps_data.lng, gps_data.time.hours, gps_data.time.minutes,
                     gps_data.time.seconds);
     }
+
+    lora::log_message = lora::gen_rand();
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
@@ -36,16 +39,21 @@ void setup() {
   memory::init();
   gps::init();
   bmp::init();
+  lora::init();
 
   xTaskCreate(led::blink_task, "blink", 10000, NULL, 1, NULL);
   xTaskCreate(gps::gps_task, "gps", 10000, NULL, 1, NULL);
   xTaskCreate(log, "log", 10000, NULL, 1, NULL);
   xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, NULL, 1, NULL);
   xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, NULL, 1, NULL);
+  xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
   memory::print_data();
   memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
   memory::save_config(memory::config);
+
+  
+
 }
 
 void loop() {}
