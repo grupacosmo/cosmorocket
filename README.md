@@ -1,9 +1,16 @@
-# cosmorocket
+# Cosmorocket
 
-## Jak używać repo
+A small bare-metal software project for an on-board computer of a low altitue rocket created at CosmoPK science club.
 
-- Stwórz swój branch
-- Commituj i pushuj swoje zmiany na swoim branchu
-- Stwórz pull request do master branch
-- Poczekaj na feedback
-- Kiedy dostaniesz zieloną okejke, zmerguj go do master branch
+## Description
+
+Project includes:
+- bme sensor handling
+- mpu sensor handling
+- SD card logging
+- Persistent flash configuration
+- Wifi debug and setup
+- LoRa peer to peer communcation with base station
+- control systems for rocket ignition and parachute deploymenmt
+
+This repo also contains a webserver and client that is used for live visualization of data and camera feed.
