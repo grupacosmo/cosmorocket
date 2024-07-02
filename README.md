@@ -1,8 +1,16 @@
 # Cosmorocket
 
-a small bare-metal software probject for a low altitue rocket created at CosmoPK science club.
+A small bare-metal software project for an on-board computer of a low altitue rocket created at CosmoPK science club.
 
-## Decription
+## Description
 
-Project includes software-driven control systems for start and parachute deploymenmt,
- data logging for multiple sensors and radio connection with ground unit
+Project includes:
+- bme sensor handling
+- mpu sensor handling
+- SD card logging
+- Persistent flash configuration
+- Wifi debug and setup
+- LoRa peer to peer communcation with base station
+- control systems for rocket ignition and parachute deploymenmt
+
+This repo also contains a webserver and client that is used for live visualization of data and camera feed.
