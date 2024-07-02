@@ -1,9 +1,8 @@
-# cosmorocket
+# Cosmorocket
 
-## Jak używać repo
+a small bare-metal software probject for a low altitue rocket created at CosmoPK science club.
 
-- Stwórz swój branch
-- Commituj i pushuj swoje zmiany na swoim branchu
-- Stwórz pull request do master branch
-- Poczekaj na feedback
-- Kiedy dostaniesz zieloną okejke, zmerguj go do master branch
+## Decription
+
+Project includes software-driven control systems for start and parachute deploymenmt,
+ data logging for multiple sensors and radio connection with ground unit
