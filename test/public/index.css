@@ -1,0 +1,41 @@
+* {
+  margin: 0;
+  padding: 0;
+  cursor: default;
+}
+
+body,
+html {
+  height: 100%;
+}
+
+.flex {
+  min-height: 100%;
+  display: flex;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+#map {
+  flex: 1;
+  max-height: 50%;
+}
+
+#sensor-table {
+  flex: 0;
+}
+
+.charts {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.chart {
+  flex: 1;
+}
