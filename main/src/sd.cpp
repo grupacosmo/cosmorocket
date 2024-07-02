@@ -1,6 +1,9 @@
 #include "sd.h"
 namespace sd {
 
+namespace {
+fs::File File;
+}
 void init() {
     if (!SD.begin(sd::DEFAULT_DATA_PIN)) {
         Serial.println("Card Mount Failed");
@@ -15,11 +18,11 @@ void init() {
     Serial.println("SD card initialized.");
 }
 
-void write(const char *data) {
-    if (SD.exists("/data.txt"))
-        File = SD.open("/data.txt", FILE_APPEND);
+void write(const char *data, const char *filename = "/data.csv") {
+    if (SD.exists(filename))
+        File = SD.open(filename, FILE_APPEND);
     else
-        File = SD.open("/data.txt", FILE_WRITE);
+        File = SD.open(filename, FILE_WRITE);
     if (!File) {
         Serial.println("Failed to open file for writing");
         return;
@@ -28,10 +31,12 @@ void write(const char *data) {
     File.close();
 }
 
-void write(const String &data) { write(data.c_str()); }
+void write(const String &data, const String &filename = "/data.csv") {
+    write(data.c_str(), filename.c_str());
+}
 
-void read() {
-    File = SD.open("/data.txt", FILE_READ);
+void read(const char *filename = "/data.csv") {
+    File = SD.open(filename, FILE_READ);
     if (!File) {
         Serial.println("Failed to open file for reading");
         return;
@@ -44,4 +49,5 @@ void read() {
     }
     File.close();
 }
+void read(const String &filename = "/data.csv") { read(filename.c_str()); }
 } // namespace sd
