@@ -1,7 +1,11 @@
 let data = {};
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { child, get, getDatabase, ref } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
+import {
+  child,
+  get,
+  getDatabase,
+  ref,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBfcwUFSmItI4ciytYSEItcSJL_yma6Nmg",
@@ -19,18 +23,11 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 
-
+const dbRef = ref(db);
 
 let tempChart = null;
 let pressureChart = null;
 let altitudeChart = null;
-
-async function fetchData() {
-  const dbRef = ref(db);
-  console.log("fetch data");
-  console.log(await get(child(dbRef, "LoRa/")).val());
-  console.log("after fetch");
-}
 
 function cloneObject(object) {
   return JSON.parse(JSON.stringify(object));
@@ -55,20 +52,50 @@ const defaultData = {
   },
 };
 
-async function setData() {
-  console.log("saet dta");
+function backfillRoot(incomingData, key) {
+  if (!(key in incomingData)) {
+    data[key] = defaultData[key];
+  }
+}
+
+function backfillComponent(incomingData, component, key) {
+  if (!(key in incomingData[component])) {
+    data[component][key] = defaultData[component][key];
+  }
+}
+
+function setData(incomingData) {
   try {
-    data = await fetchData();
+    const parsedIncomingData = JSON.parse(incomingData);
+    data = parsedIncomingData;
+
     if (Object.keys(data).length === 0) {
       data = cloneObject(defaultData);
     }
 
+    backfillRoot(parsedIncomingData, "time");
+
+    backfillRoot(parsedIncomingData, "bme");
+    backfillComponent(parsedIncomingData, "bme", "temperature");
+    backfillComponent(parsedIncomingData, "bme", "humidity");
+    backfillComponent(parsedIncomingData, "bme", "pressure");
+
+    backfillRoot(parsedIncomingData, "gps");
+    backfillComponent(parsedIncomingData, "gps", "latitude");
+    backfillComponent(parsedIncomingData, "gps", "longitude");
+    backfillComponent(parsedIncomingData, "gps", "altitude");
+
+    backfillRoot(parsedIncomingData, "mpu");
+    backfillComponent(parsedIncomingData, "mpu", "acceleration");
+    backfillComponent(parsedIncomingData, "mpu", "rotation");
+    backfillComponent(parsedIncomingData, "mpu", "angularVelocity");
+
     pushChartData(tempChart, data.bme.temperature);
     pushChartData(pressureChart, data.bme.pressure);
     pushChartData(altitudeChart, data.gps.altitude);
-  } catch (err){
+  } catch (err) {
     data = cloneObject(defaultData);
-    console.log("error", err );
+    console.log("error", err);
   }
 }
 
@@ -84,7 +111,6 @@ function pushChartData(chart, data) {
 }
 
 function formatDate() {
-  console.log("format data");
   const date = new Date();
   return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
 }
@@ -118,9 +144,8 @@ function initCharts() {
 }
 
 async function init() {
-  console.log("init");
   initCharts();
-  await setData();
+  setData((await get(child(dbRef, "LoRa/"))).val());
 
   const map = L.map("map").setView([data.gps.latitude, data.gps.longitude], 13);
 
@@ -137,11 +162,12 @@ async function init() {
     marker.setLatLng(newLoc);
   }
 
-  setInterval(async () => {
-    await setData();
+  const loraRef = ref(dbRef, "LoRa/");
+  onValue(loraRef, async (snapshot) => {
+    setData(snapshot.val());
     map.flyTo([data.gps.latitude, data.gps.longitude], 14);
     setMarkerLocation(data.gps.latitude, data.gps.longitude);
-  }, 1500);
+  });
 }
 
 init();
