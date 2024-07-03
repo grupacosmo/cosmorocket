@@ -9,11 +9,11 @@ namespace lora
     inline String log_message;
 
     void init();
-    void send(String wiadomosc);
+    void send(String message);
     String gen_rand();
     void lora_log(void* pvParameters);
+    bool is_lora_available();
 
-
-} // namespace Lora
+} // namespace lora
 
 #endif

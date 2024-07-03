@@ -51,9 +51,6 @@ void setup() {
   memory::print_data();
   memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
   memory::save_config(memory::config);
-
-  
-
 }
 
 void loop() {}

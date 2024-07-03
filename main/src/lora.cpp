@@ -1,38 +1,65 @@
 #include "lora.h"
-#define TX 15
-#define RX 19
+
+std::uint8_t constexpr TX_pin = 15; //must rename because of conflict with one of libs
+std::uint8_t constexpr RX_pin = 19;
+constexpr std::uint16_t frequency = 868;
+constexpr char spreadingFactor[] = "SF12";
+constexpr std::uint8_t bandwidth = 125;
+constexpr std::uint8_t TXPR = 12;
+constexpr std::uint8_t RXPR = 15;
+constexpr std::uint8_t power = 14;
+constexpr char crc[] = "ON";
+constexpr char IQ[] = "OFF";
+constexpr char NET[] = "OFF";
+
 
 namespace lora {
+//https://files.seeedstudio.com/products/317990687/res/LoRa-E5+AT+Command+Specification_V1.0+.pdf
 
 HardwareSerial LoRaWioE5(1);
 
+//function checking lora's availability
+bool is_lora_available() {
+  LoRaWioE5.println("AT");
+
+  delay(1000);
+
+  if (LoRaWioE5.find("OK")) {
+    Serial.println("LoRa module is available");
+    return true;
+  }
+
+  Serial.println("LoRa module is not available");
+  return false;
+}
+
 void init() {
   // communication with LoRa Wio E5, RX and TX pins, baudrate 9600
-  LoRaWioE5.begin(9600, SERIAL_8N1, TX, RX);
-  LoRaWioE5.print("AT+MODE=TEST\r\n");  // set transmitter in test mode
+  String atCommand = "AT+MODE=TEST\r\n";
+  LoRaWioE5.begin(9600, SERIAL_8N1, TX_pin, RX_pin);
+  LoRaWioE5.print(atCommand);  // set transmitter in test mode
   delay(1000);
 
   // check if lora is available
-  if (LoRaWioE5.readString() != "+MODE: TEST") {
-    Serial.println("\nLora is not available");
-  }
-  delay(1000);
+  is_lora_available();
 
   // setup LoRa for transmitting
-  LoRaWioE5.print(
-      "AT+TEST=RFCFG, 868, SF12, 125, 12, 15, 14, ON, OFF, OFF\r\n");
+  atCommand = String("AT+TEST=RFCFG, ") + frequency + ", " + spreadingFactor + ", " + bandwidth + ", " + TXPR + ", " + RXPR + ", " + power + ", " + crc + ", " + IQ + ", " + NET + "\r\n";
+
+  LoRaWioE5.print(atCommand);
   delay(1000);
 }
 
+//function for testing sake
 String gen_rand() {
   String result = "";
-  srand(time(0));  // inicjalizacja generatora liczb losowych
+  srand(time(0));  
   for (int i = 0; i < 17; i++) {
     int random_number =
-        rand() % 1001;  // generowanie losowej liczby z zakresu 0-1000
-    result += String(random_number);  // Konwertuje liczbę na ciąg znaków
+        rand() % 1001;  
+    result += String(random_number); 
     result +=
-        ", ";  // Dodaje przecinek po każdej liczbie, z wyjątkiem ostatniej
+        ", ";  // comma added to get needed format of string
   }
   return result;
 }
@@ -41,7 +68,6 @@ void send(String message) {
   LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
   // carriage return is essential
 }
-
 
 void lora_log(void* pvParameters){
   for(;;){
@@ -52,4 +78,4 @@ void lora_log(void* pvParameters){
 
 }
 
-}  // namespace Lora
+}  // namespace lora
