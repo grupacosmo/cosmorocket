@@ -1,5 +1,4 @@
 namespace bmp {
-// wymaga ustawienia Wire.begin(SDA_PIN, SCL_PIN) wcześniej
 void init();
 
 struct Data {
