@@ -5,6 +5,7 @@ import {
   get,
   getDatabase,
   ref,
+  onValue,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -162,7 +163,7 @@ async function init() {
     marker.setLatLng(newLoc);
   }
 
-  const loraRef = ref(dbRef, "LoRa/");
+  const loraRef = ref(db, "LoRa/");
   onValue(loraRef, async (snapshot) => {
     setData(snapshot.val());
     map.flyTo([data.gps.latitude, data.gps.longitude], 14);
