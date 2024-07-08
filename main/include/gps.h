@@ -15,6 +15,7 @@ struct Data {
 
 void init();
 void gps_task(void *pvParameters);
+void print_data(void *pvParameters);
 Data get_gps_data();
 bool data_is_available();
 

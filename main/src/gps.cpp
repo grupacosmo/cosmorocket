@@ -38,4 +38,19 @@ void gps_task(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
+
+void print_data(void *pvParameters) {
+    for (;;) {
+        if (!data_is_available()) {
+            Serial.println("GPS data is unavailable.");
+        } else {
+            gps::Data gps_data = get_gps_data();
+            Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n",
+                          gps_data.lat, gps_data.lng, gps_data.time.hours,
+                          gps_data.time.minutes, gps_data.time.seconds);
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
 } // namespace gps
