@@ -11,23 +11,6 @@ std::uint8_t constexpr MY_SCL = 22;
 unsigned long constexpr BAUD_RATE = 115200;
 std::uint32_t constexpr DEFAULT_TASK_SIZE = 10000;
 
-/// Log data from sensors
-/// For now it only logs gps data to console, eventually
-/// it should write the data from all components to a disk
-void log(void *pvParameters) {
-    for (;;) {
-        if (!gps::data_is_available()) {
-            Serial.println("GPS data is unavailable.");
-        } else {
-            gps::Data gps_data = gps::get_gps_data();
-            Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n",
-                          gps_data.lat, gps_data.lng, gps_data.time.hours,
-                          gps_data.time.minutes, gps_data.time.seconds);
-        }
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
 void setup() {
     Wire.begin(MY_SDA, MY_SCL);
     Serial.begin(BAUD_RATE);
@@ -39,7 +22,6 @@ void setup() {
 
     xTaskCreate(led::blink_task, "blink", DEFAULT_TASK_SIZE, NULL, 1, NULL);
     xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, NULL, 1, NULL);
-    xTaskCreate(log, "log", DEFAULT_TASK_SIZE, NULL, 1, NULL);
     xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, NULL, 1, NULL);
     xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
