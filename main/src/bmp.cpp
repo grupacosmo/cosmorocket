@@ -29,13 +29,13 @@ Data measurements() {
     return check;
 };
 
-void get_bmp(void *pvParameters) {
+void get_bmp([[maybe_unused]] void *pvParameters) {
     for (;;) {
         data = measurements();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
-void print_data(void *pvParameters) {
+void print_data([[maybe_unused]] void *pvParameters) {
     for (;;) {
         pretty_print(data);
         vTaskDelay(pdMS_TO_TICKS(500));
