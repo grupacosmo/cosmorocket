@@ -8,11 +8,11 @@ struct Data {
     float pressure;
     float altitude;
 
-    float get_as_hpa();
+    static float get_as_hpa();
 };
 
 void get_bmp(void *pvParameters);
 void print_data(void *pvParameters);
-std::optional<Data> measure();
 void pretty_print(std::optional<Data> const &bmp_data);
+std::optional<Data> get_data();
 } // namespace bmp
