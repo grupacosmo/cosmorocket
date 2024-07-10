@@ -1,3 +1,4 @@
+#pragma once
 #include "bmp.h"
 #include "gps.h"
 #include "mpu.h"
