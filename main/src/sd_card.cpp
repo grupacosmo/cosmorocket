@@ -1,25 +1,23 @@
 #include "sd_card.h"
 
-// TODO make it better
-#ifndef SD_SCK
-// t-bean
-#define SD_SCK 25 
-#define SD_MISO 15 
-#define SD_MOSI 32 
-#define SD_SS 33
-#endif
-
 namespace sd {
 
 namespace {
 fs::File File;
 }
-void init() {
-    // TODO if lolin then SD.begin(sd::DEFAULT_DATA_PIN) // without spi
-    SPIClass spi(VSPI);
-    spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_SS);
 
-    if (!SD.begin(sd::DEFAULT_DATA_PIN, spi)) {
+bool SDBegin() {
+    #ifdef SD_CUSTOM_SPI
+        SPIClass spi(VSPI);
+        spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_SS);
+        return SD.begin(sd::DEFAULT_DATA_PIN, spi);
+    #else
+        return SD.begin(sd::DEFAULT_DATA_PIN);
+    #endif
+}
+
+void init() {
+    if (!SDBegin()) {
         Serial.println("Card Mount Failed");
         return;
     }
