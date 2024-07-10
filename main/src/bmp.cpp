@@ -61,5 +61,7 @@ void pretty_print(std::optional<Data> const &bmp_data) {
     }
 }
 
+std::optional<Data> get_data() { return data; }
+
 float Data::get_as_hpa() { return bmp_obj.readPressure() / 100.0F; }
 } // namespace bmp
