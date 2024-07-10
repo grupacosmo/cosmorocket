@@ -6,8 +6,8 @@
 #include "led.h"
 #include "memory.h"
 
-std::uint8_t constexpr SDA_PIN = 13;
-std::uint8_t constexpr SCL_PIN = 15;
+std::uint8_t constexpr SDA_PIN = SDA_PIN_DEF;
+std::uint8_t constexpr SCL_PIN = SCL_PIN_DEF;
 unsigned long constexpr BAUD_RATE = 115200;
 std::uint32_t constexpr DEFAULT_TASK_SIZE = 10000;
 
