@@ -18,7 +18,7 @@ void init() { GPSSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN); }
 bool data_is_available() { return data_available; }
 Data get_gps_data() { return gps_data; }
 
-void gps_task(void *pvParameters) {
+void gps_task([[maybe_unused]] void *pvParameters) {
     for (;;) {
         while (GPSSerial.available()) {
             bool sentence_finished = tiny_gps.encode(GPSSerial.read());
@@ -39,10 +39,10 @@ void gps_task(void *pvParameters) {
     }
 }
 
-void print_data(void *pvParameters) {
+void print_data([[maybe_unused]] void *pvParameters) {
     for (;;) {
         if (!data_is_available()) {
-            Serial.println("GPS data is unavailable.");
+            Serial.println("GPS: no fix");
         } else {
             gps::Data gps_data = get_gps_data();
             Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n",
