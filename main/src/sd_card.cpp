@@ -1,11 +1,23 @@
 #include "sd_card.h"
+
 namespace sd {
 
 namespace {
 fs::File File;
 }
+
+bool SDBegin() {
+    #ifdef SD_CUSTOM_SPI
+        SPIClass spi(VSPI);
+        spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_SS);
+        return SD.begin(sd::DEFAULT_DATA_PIN, spi);
+    #else
+        return SD.begin(sd::DEFAULT_DATA_PIN);
+    #endif
+}
+
 void init() {
-    if (!SD.begin(sd::DEFAULT_DATA_PIN)) {
+    if (!SDBegin()) {
         Serial.println("Card Mount Failed");
         return;
     }
