@@ -5,6 +5,7 @@
 #include "gps.h"
 #include "led.h"
 #include "memory.h"
+#include "mpu.h"
 
 std::uint8_t constexpr MY_SDA = 21;
 std::uint8_t constexpr MY_SCL = 22;
@@ -24,6 +25,7 @@ void setup() {
     xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, NULL, 1, NULL);
     xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, NULL, 1, NULL);
     xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, NULL, 1, NULL);
+    xTaskCreate(mpu::get_mpu, "mpu", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
     memory::print_data();
     memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};

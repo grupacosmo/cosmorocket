@@ -1,4 +1,3 @@
-
 namespace mpu {
 struct Data {
     float max_x;
@@ -11,4 +10,6 @@ struct Data {
     float rot_y;
     float rot_z;
 };
+void init();
+void get_mpu(void *pvParameters);
 } // namespace mpu
