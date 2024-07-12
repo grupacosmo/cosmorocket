@@ -7,13 +7,8 @@
 #include "led.h"
 #include "memory.h"
 
-std::uint8_t constexpr SDL_PIN = SDA_PIN_;
-std::uint8_t constexpr SCL_PIN = SCL_PIN_;
-unsigned long constexpr BAUD_RATE = 115200;
-std::uint32_t constexpr DEFAULT_TASK_SIZE = 10000;
-
 void setup() {
-    Wire.begin(SDL_PIN, SCL_PIN);
+    Wire.begin(SDA_PIN, SCL_PIN);
     Serial.begin(BAUD_RATE);
     Serial.println("--- ROCKET COMPUTER START ---");
 

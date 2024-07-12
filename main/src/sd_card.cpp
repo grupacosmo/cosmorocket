@@ -1,4 +1,6 @@
 #include "sd_card.h"
+#include "SPI.h"
+#include "board_config.h"
 namespace sd {
 
 namespace {
@@ -27,6 +29,8 @@ void write(const char *data, const char *filename = "/data.csv") {
         Serial.println("Failed to open file for writing");
         return;
     }
+    SPIClass spi(VSPI);
+    spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_SS);
     File.println(data);
     File.close();
 }
