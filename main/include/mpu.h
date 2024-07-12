@@ -1,4 +1,4 @@
-
+#pragma once
 namespace mpu {
 struct Data {
     float max_x;

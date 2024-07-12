@@ -1,3 +1,4 @@
+#pragma once
 #include <HardwareSerial.h>
 
 namespace gps {

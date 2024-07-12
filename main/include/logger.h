@@ -1,9 +1,10 @@
+#pragma once
 #include "bmp.h"
 #include "gps.h"
 #include "mpu.h"
 #include <cstdint>
 
-namespace log {
+namespace logger {
 struct Packet {
     bmp::Data bmp_data{};
     mpu::Data mpu_data{};
@@ -14,4 +15,4 @@ struct Packet {
 };
 
 String serialize(Packet &packet);
-} // namespace log
+} // namespace logger

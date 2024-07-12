@@ -1,3 +1,4 @@
+#pragma once
 #include <EEPROM.h>
 
 constexpr std::size_t MEMORY_SIZE = 512;

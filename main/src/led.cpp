@@ -3,7 +3,7 @@
 namespace led {
 void setup() {}
 
-void blink_task(void *pvParameters) {
+void blink_task([[maybe_unused]] void *pvParameters) {
     pinMode(LED_BUILTIN, OUTPUT);
     for (;;) {
         digitalWrite(LED_BUILTIN, HIGH);

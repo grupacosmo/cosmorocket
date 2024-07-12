@@ -1,6 +1,6 @@
 #include "logger.h"
 
-namespace log {
+namespace logger {
 namespace {
 int serialize_data(char *buf, size_t len, const Packet &packet) {
     return snprintf(
@@ -26,4 +26,4 @@ String serialize(Packet &packet) {
 
     return String(buf);
 }
-} // namespace log
+} // namespace logger
