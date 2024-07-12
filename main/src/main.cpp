@@ -2,18 +2,14 @@
 #include <Wire.h>
 
 #include "bmp.h"
+#include "board_config.h"
 #include "gps.h"
 #include "led.h"
 #include "memory.h"
 #include "lora.h"
 
-std::uint8_t constexpr MY_SDA = 21;
-std::uint8_t constexpr MY_SCL = 22;
-unsigned long constexpr BAUD_RATE = 115200;
-std::uint32_t constexpr DEFAULT_TASK_SIZE = 10000;
-
 void setup() {
-    Wire.begin(MY_SDA, MY_SCL);
+    Wire.begin(SDA_PIN, SCL_PIN);
     Serial.begin(BAUD_RATE);
     Serial.println("--- ROCKET COMPUTER START ---");
 
