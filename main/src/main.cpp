@@ -5,6 +5,7 @@
 #include "gps.h"
 #include "led.h"
 #include "memory.h"
+#include "lora.h"
 
 std::uint8_t constexpr MY_SDA = 21;
 std::uint8_t constexpr MY_SCL = 22;
@@ -19,13 +20,14 @@ void setup() {
     memory::init();
     gps::init();
     bmp::init();
+    lora::init();
 
     xTaskCreate(led::blink_task, "blink", DEFAULT_TASK_SIZE, nullptr, 1,
                 nullptr);
     xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
     xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-    xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1,
-                nullptr);
+    xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
+    xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
     memory::print_data();
     memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
