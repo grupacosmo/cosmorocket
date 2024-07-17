@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ESP IOT DASHBOARD</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <div>
+            Avarage of <input id="readCount" type="number" min="1" max="99" value="1"> reads. <br>
+            Value: <div id="value">NaN</div>
+            <div id="readIndicator">.</div>
+        </div>
+        <div>
+            <button onclick="tare()" id="tareButton">Tare</button>
+        </div>
+        <div>
+            Put known weight on scale and insert its weight in input field below, then press "calibrate" button. <br>
+            <input id="scaleValue"> <button onclick="calibrate()" id="calibrateButton">calibrate</button>
+        </div>
+        <script>
+            let readCount = document.getElementById("readCount");
+            let readValue = document.getElementById("value");
+            let readIndicator = document.getElementById("readIndicator");
+            let scaleValueInput = document.getElementById("scaleValue");
+            let tareButton = document.getElementById("tareButton");
+            let calibrateButton = document.getElementById("calibrateButton");
+            let readIndicatorValue = 1;
+            
+            setTimeout(read, 1000);
+
+            function read() {
+                readCountValue = readCount.value;
+                readIndicatorValue = (readIndicatorValue + 1) % 5
+                readIndicator.innerText = "o".repeat(readIndicatorValue) + ".";
+                fetch("/get?count="+readCountValue)
+                    .then(response => response.text())
+                    .then(response => {
+                        readValue.innerText = response;
+                        readIndicator.innerText = "o".repeat(readIndicatorValue) + "o";
+                        setTimeout(read, 500);
+                    })
+                    .catch(er => {
+                        console.log(er);
+                        console.log("start read again with `read()`");
+                        readIndicator.innerText = "err";
+                    });
+            }
+
+            function tare() {
+                tareButton.disabled = true;
+                fetch("/tare")
+                    .then(r => { tareButton.disabled = false})
+                    .catch(er => {
+                        console.log(er);
+                        tareButton.disabled = false
+                    });
+            }
+
+            function calibrate() {
+                let value = scaleValueInput.value;
+                calibrateButton.disabled = true;
+                fetch("/set_scale?scale="+value)
+                    .then(r => { calibrateButton.disabled = false})
+                    .catch(er => {
+                        console.log(er);
+                        calibrateButton.disabled = false
+                    });
+            }
+        </script>
+    </body>
+</html>
