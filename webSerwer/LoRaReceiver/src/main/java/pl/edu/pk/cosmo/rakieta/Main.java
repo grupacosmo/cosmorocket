@@ -1,9 +1,7 @@
 package pl.edu.pk.cosmo.rakieta;
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fazecast.jSerialComm.SerialPort;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import pl.edu.pk.cosmo.rakieta.entity.SensorPacket;
@@ -17,7 +15,7 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectWriter objectMapper = new ObjectMapper().writer().withDefaultPrettyPrinter();
         FireBaseService fireBaseService = new FireBaseService();
         FirebaseDatabase database = fireBaseService.getDb();
         try (EspRead data = new EspRead()) {
@@ -32,7 +30,7 @@ public class Main {
         }
     }
 
-    private static void mainLoop(EspRead data, ObjectMapper objectMapper, DatabaseReference ref) {
+    private static void mainLoop(EspRead data, ObjectWriter objectMapper, DatabaseReference ref) {
         while (true) {
             try {
                 SensorPacket readdata = data.readdata();
@@ -46,7 +44,7 @@ public class Main {
         }
     }
 
-    private static void readAndSend(SensorPacket sensorPacket, ObjectMapper objectMapper, DatabaseReference ref) throws IOException {
+    private static void readAndSend(SensorPacket sensorPacket, ObjectWriter objectMapper, DatabaseReference ref) throws IOException {
         String dataLoRaJson = objectMapper.writeValueAsString(sensorPacket);
         ref.setValue(dataLoRaJson, (databaseError, databaseReference) -> {
             if (databaseError != null) {
@@ -56,7 +54,7 @@ public class Main {
             }
         });
     }
-    private static void writeToFile(SensorPacket data, ObjectMapper objectMapper) throws IOException {
+    private static void writeToFile(SensorPacket data, ObjectWriter objectMapper) throws IOException {
         String saveFile = objectMapper.writeValueAsString(data);
         String fileName = java.time.LocalDate.now().toString() + ".txt";
         File file = new File(fileName);

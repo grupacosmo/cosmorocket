@@ -37,7 +37,6 @@ public class EspRead implements Closeable {
                 .build();
         csvMapper = new CsvMapper();
     }
-
     public void choosePort() throws IOException {
         SerialPort[] ports = SerialPort.getCommPorts();
         System.out.println("Select a port:");
@@ -77,7 +76,6 @@ public class EspRead implements Closeable {
 
     private void waitForOK(String expectedResponse, String info) throws IOException {
         String message = serialInput.readLine();
-//        int b = serialInput.read();
         System.out.println("[DEBUG][LoraResponse] " + message);
         if (!message.contains(expectedResponse)) {
             throw new LoRaException("Not recived '" + expectedResponse + "' for " + info );
@@ -139,20 +137,23 @@ public class EspRead implements Closeable {
             CsvSensorPacket s1 = csvMapper.readerFor(CsvSensorPacket.class)
                     .with(schema)
                     .readValue(split, CsvSensorPacket.class);
-            sensorPacket.setTime(s1.getTime());
-            sensorPacket.setRelayFlags(s1.getRelayFlags());
+            sensorPacket.setN(s1.getN());
+            sensorPacket.setSys_time(s1.getSys_time());
+            sensorPacket.setStatus(s1.getStatus());
+            sensorPacket.setErrors(s1.getErrors());
 
-            sensorPacketBME.setTemperature(s1.getTemperature());
-            sensorPacketBME.setHumidity(s1.getHumidity());
-            sensorPacketBME.setPressure(s1.getPressure());
+            sensorPacketBME.setBmp_temp(s1.getBmp_temp());
+            sensorPacketBME.setBmp_humidity(s1.getBmp_humidity());
+            sensorPacketBME.setBmp_pressure(s1.getBmp_pressure());
+            sensorPacketBME.setBmp_altitude(s1.getBmp_altitude());
 
-            sensorPacketGPS.setAltitude(s1.getAltitude());
-            sensorPacketGPS.setLongitude(s1.getLongitude());
-            sensorPacketGPS.setLatitude(s1.getLatitude());
+            sensorPacketGPS.setGps_altitude(s1.getGps_altitude());
+            sensorPacketGPS.setGps_longitude(s1.getGps_longitude());
+            sensorPacketGPS.setGps_latitude(s1.getGps_latitude());
 
-            sensorPacketMPU.setAcceleration(new Float3(s1.getAccelerationX(), s1.getAccelerationY(), s1.getAccelerationZ()));
-            sensorPacketMPU.setRotation(new Float3(s1.getRotationX(), s1.getRotationY(), s1.getRotationZ()));
-            sensorPacketMPU.setAngularVelocity(new Float3(s1.getAngularVelocityX(), s1.getAngularVelocityY(), s1.getAngularVelocityZ()));
+            sensorPacketMPU.setMpu_avg(new Float3(s1.getMpu_avg_x(), s1.getMpu_avg_y(), s1.getMpu_avg_z()));
+            sensorPacketMPU.setMpu_max(new Float3(s1.getMpu_max_x(), s1.getMpu_max_y(), s1.getMpu_max_z()));
+            sensorPacketMPU.setMpu_rot(new Float3(s1.getMpu_rot_x(), s1.getMpu_rot_y(), s1.getMpu_rot_z()));
 
             sensorPacket.setBme(sensorPacketBME);
             sensorPacket.setMpu(sensorPacketMPU);
