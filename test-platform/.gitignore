@@ -1,0 +1,5 @@
+.pio
+.cache
+.vscode
+compile_commands.json
+sensor-readings
