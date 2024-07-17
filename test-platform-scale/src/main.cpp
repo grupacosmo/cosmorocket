@@ -14,7 +14,6 @@
 
 int buttonState = 0;
 AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
 HX711 scale;
 
 void initServerCommands();
