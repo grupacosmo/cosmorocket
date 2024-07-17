@@ -15,7 +15,7 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) throws IOException {
-        ObjectWriter objectMapper = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        ObjectMapper objectMapper = new ObjectMapper();
         FireBaseService fireBaseService = new FireBaseService();
         FirebaseDatabase database = fireBaseService.getDb();
         try (EspRead data = new EspRead()) {
@@ -30,12 +30,12 @@ public class Main {
         }
     }
 
-    private static void mainLoop(EspRead data, ObjectWriter objectMapper, DatabaseReference ref) {
+    private static void mainLoop(EspRead data, ObjectMapper objectMapper, DatabaseReference ref) {
         while (true) {
             try {
                 SensorPacket readdata = data.readdata();
                 if (readdata != null){
-                    readAndSend(readdata, objectMapper, ref);
+                    readAndSend(readdata, ref);
                     writeToFile(readdata, objectMapper);
                 }
             } catch (Exception e) {
@@ -44,9 +44,8 @@ public class Main {
         }
     }
 
-    private static void readAndSend(SensorPacket sensorPacket, ObjectWriter objectMapper, DatabaseReference ref) throws IOException {
-        String dataLoRaJson = objectMapper.writeValueAsString(sensorPacket);
-        ref.setValue(dataLoRaJson, (databaseError, databaseReference) -> {
+    private static void readAndSend(SensorPacket sensorPacket, DatabaseReference ref) {
+        ref.setValue(sensorPacket, (databaseError, databaseReference) -> {
             if (databaseError != null) {
                 System.out.println("Data could not be saved. " + databaseError.getMessage());
             } else {
@@ -54,7 +53,7 @@ public class Main {
             }
         });
     }
-    private static void writeToFile(SensorPacket data, ObjectWriter objectMapper) throws IOException {
+    private static void writeToFile(SensorPacket data, ObjectMapper objectMapper) throws IOException {
         String saveFile = objectMapper.writeValueAsString(data);
         String fileName = java.time.LocalDate.now().toString() + ".txt";
         File file = new File(fileName);
