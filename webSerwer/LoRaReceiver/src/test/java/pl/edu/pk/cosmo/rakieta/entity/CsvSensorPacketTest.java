@@ -11,6 +11,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.edu.pk.cosmo.rakieta.service.FireBaseService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import java.io.IOException;
 
@@ -107,7 +108,7 @@ class CsvSensorPacketTest {
     @Test
     void dataBaseSaveTest() throws IOException {
         SensorPacket packet = new SensorPacket();
-        packet.setN(2);
+        packet.setN(3);
         packet.setSys_time(1625158800L);
         packet.setBme(new SensorPacketBME(
                 25.5f,
@@ -134,12 +135,14 @@ class CsvSensorPacketTest {
         FirebaseDatabase database = fireBaseService.getDb();
         DatabaseReference ref = database.getReference("LoRa");
         String dataLoRaJson = objectWriter.writeValueAsString(packet);
-        while (true) {
+        AtomicBoolean continueLoop = new AtomicBoolean(true);
+        while (continueLoop.get()) {
             ref.setValue(packet, (databaseError, databaseReference) -> {
                 if (databaseError != null) {
                     System.out.println("Data could not be saved. " + databaseError.getMessage());
                 } else {
                     System.out.println("Data saved successfully.");
+                    continueLoop.set(false);
                 }
             });
         }
