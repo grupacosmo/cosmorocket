@@ -2,14 +2,11 @@
 #include <Wire.h>
 
 #include "bmp.h"
+#include "board_config.h"
 #include "gps.h"
 #include "led.h"
 #include "memory.h"
-
-std::uint8_t constexpr SDA_PIN = SDA_PIN_DEF;
-std::uint8_t constexpr SCL_PIN = SCL_PIN_DEF;
-unsigned long constexpr BAUD_RATE = 115200;
-std::uint32_t constexpr DEFAULT_TASK_SIZE = 10000;
+#include "lora.h"
 
 void setup() {
     Wire.begin(SDA_PIN, SCL_PIN);
@@ -19,13 +16,14 @@ void setup() {
     memory::init();
     gps::init();
     bmp::init();
+    lora::init();
 
     xTaskCreate(led::blink_task, "blink", DEFAULT_TASK_SIZE, nullptr, 1,
                 nullptr);
     xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
     xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-    xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1,
-                nullptr);
+    xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
+    xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
     memory::print_data();
     memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
