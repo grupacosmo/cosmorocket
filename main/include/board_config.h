@@ -3,25 +3,25 @@
 #include <cstdint>
 #ifdef TBEAM
 
-int8_t constexpr SD_SCK = 25;
-int8_t constexpr SD_MISO = 15;
-int8_t constexpr SD_MOSI = 32;
-int8_t constexpr SD_SS = 33;
+constexpr int8_t SD_SCK = 25;
+constexpr int8_t SD_MISO = 15;
+constexpr int8_t SD_MOSI = 32;
+constexpr int8_t SD_SS = 33;
 
-uint8_t constexpr SDA_PIN = 21;
-uint8_t constexpr SCL_PIN = 22;
+constexpr uint8_t SDA_PIN = 21;
+constexpr uint8_t SCL_PIN = 22;
 
 #else
 
-int8_t constexpr SD_SCK = 18;
-int8_t constexpr SD_MISO = 19;
-int8_t constexpr SD_MOSI = 23;
-int8_t constexpr SD_SS = 5;
+constexpr int8_t SD_SCK = 18;
+constexpr int8_t SD_MISO = 19;
+constexpr int8_t SD_MOSI = 23;
+constexpr int8_t SD_SS = 5;
 
-uint8_t constexpr SDA_PIN = 13;
-uint8_t constexpr SCL_PIN = 15;
+constexpr uint8_t SDA_PIN = 13;
+constexpr uint8_t SCL_PIN = 15;
 
 #endif
 
-unsigned long constexpr BAUD_RATE = 115200;
-std::uint32_t constexpr DEFAULT_TASK_SIZE = 10000;
+constexpr unsigned long BAUD_RATE = 115200;
+constexpr std::uint32_t DEFAULT_TASK_SIZE = 10000;

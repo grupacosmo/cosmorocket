@@ -1,6 +1,5 @@
 #pragma once
 #include <cmath>
-#include <optional>
 namespace bmp {
 void init();
 

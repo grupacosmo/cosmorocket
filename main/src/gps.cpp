@@ -6,9 +6,9 @@ TinyGPSPlus tiny_gps;
 gps::Data gps_data;
 bool data_available = false;
 
-uint8_t constexpr GPS_SERIAL_NUM = 1;
-uint8_t constexpr GPS_RX_PIN = 34;
-uint8_t constexpr GPS_TX_PIN = 12;
+constexpr uint8_t GPS_SERIAL_NUM = 1;
+constexpr uint8_t GPS_RX_PIN = 34;
+constexpr uint8_t GPS_TX_PIN = 12;
 
 namespace gps {
 HardwareSerial GPSSerial(GPS_SERIAL_NUM);

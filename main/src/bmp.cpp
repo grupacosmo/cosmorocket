@@ -4,10 +4,10 @@
 #include <Adafruit_Sensor.h>
 
 // 1019.91 is avg Pressure in Cracow
-float constexpr SEALEVELPRESSURE_HPA = 1019.91;
-std::uint8_t constexpr CHIP_BME = 0x60;
-[[maybe_unused]] std::uint8_t constexpr CHIP_BMP = 0x58;
-std::uint8_t constexpr CHIP_ADDR = 0x76;
+[[maybe_unused]] constexpr float SEALEVELPRESSURE_HPA = 1019.91;
+constexpr std::uint8_t CHIP_BME = 0x60;
+[[maybe_unused]] constexpr std::uint8_t CHIP_BMP = 0x58;
+constexpr std::uint8_t CHIP_ADDR = 0x76;
 
 namespace bmp {
 
