@@ -52,8 +52,6 @@ void pretty_print() {
     Serial.print("[Altitude] ");
     Serial.print(data.altitude);
     Serial.println("m");
-
-    Serial.println();
 }
 
 Data get_data() { return data; }
