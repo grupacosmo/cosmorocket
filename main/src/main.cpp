@@ -5,8 +5,8 @@
 #include "board_config.h"
 #include "gps.h"
 #include "led.h"
-#include "memory.h"
 #include "lora.h"
+#include "memory.h"
 
 void setup() {
     Wire.begin(SDA_PIN, SCL_PIN);
@@ -22,7 +22,8 @@ void setup() {
                 nullptr);
     xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
     xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-    xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
+    xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1,
+                nullptr);
     xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
     memory::print_data();

@@ -4,59 +4,56 @@
 #include <Adafruit_Sensor.h>
 
 // 1019.91 is avg Pressure in Cracow
-float constexpr SEALEVELPRESSURE_HPA = 1019.91;
-std::uint8_t constexpr CHIP_BME = 0x60;
-[[maybe_unused]] std::uint8_t constexpr CHIP_BMP = 0x58;
-std::uint8_t constexpr CHIP_ADDR = 0x76;
+[[maybe_unused]] constexpr float SEALEVELPRESSURE_HPA = 1019.91;
+constexpr std::uint8_t CHIP_BME = 0x60;
+[[maybe_unused]] constexpr std::uint8_t CHIP_BMP = 0x58;
+constexpr std::uint8_t CHIP_ADDR = 0x76;
 
 namespace bmp {
 
 Adafruit_BMP280 bmp_obj;
+Data data;
+bool init_success = false;
 
 void init() {
-    if (!bmp_obj.begin(CHIP_ADDR, CHIP_BME)) {
+    init_success = bmp_obj.begin(CHIP_ADDR, CHIP_BME);
+    if (!init_success) {
         Serial.println("Viable sensor BMP280 not found, check wiring!");
-        for (;;) {
-        }
     }
 }
-
-Data measurements() {
-    Data check;
-    check.temperature = bmp_obj.readTemperature();
-    check.pressure = bmp_obj.readPressure();
-    check.altitude = bmp_obj.readAltitude(SEALEVELPRESSURE_HPA);
-    return check;
-};
 
 void get_bmp([[maybe_unused]] void *pvParameters) {
     for (;;) {
-        data = measurements();
+        if (init_success) {
+            data = Data{.temperature = bmp_obj.readTemperature(),
+                        .pressure = bmp_obj.readPressure(),
+                        .altitude = bmp_obj.readAltitude()};
+        }
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
+
 void print_data([[maybe_unused]] void *pvParameters) {
     for (;;) {
-        pretty_print(data);
+        pretty_print();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-void pretty_print(Data data) {
-    Serial.print("Temperature = ");
+void pretty_print() {
+    Serial.print("[Temperature] ");
     Serial.print(data.temperature);
-    Serial.println(" *C");
+    Serial.println("°C");
 
-    Serial.print("Pressure = ");
-    Serial.print(data.get_as_hpa());
-    Serial.println(" hPa");
+    Serial.print("[Pressure] ");
+    Serial.print(data.hpa());
+    Serial.println("hPa");
 
-    Serial.print("Approx. Altitude = ");
+    Serial.print("[Altitude] ");
     Serial.print(data.altitude);
-    Serial.println(" m");
-
-    Serial.println();
+    Serial.println("m");
 }
 
-float Data::get_as_hpa() { return bmp_obj.readPressure() / 100.0F; }
+Data get_data() { return data; }
+
 } // namespace bmp
