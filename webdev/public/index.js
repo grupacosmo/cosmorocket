@@ -35,21 +35,23 @@ function cloneObject(object) {
 }
 
 const defaultData = {
-  time: 0.0,
+  sys_time: 0.0,
   bme: {
-    temperature: 0.0,
-    humidity: 0.0,
-    pressure: 0.0,
+    bmp_altitude: 0.0,
+    bmp_humidity: 0.0,
+    bmp_pressure: 0.0,
+    bmp_temp: 0.0,
   },
   gps: {
-    latitude: 55.7506,
-    longitude: 37.6175,
-    altitude: 0.0,
+    gps_latitude: 55.7506,
+    gps_longitude: 37.6175,
+    gps_altitude: 0.0,
+    gps_time: 0.0,
   },
   mpu: {
-    acceleration: { x: 0.0, y: 0.0, z: 0.0 },
-    rotation: { x: 0.0, y: 0.0, z: 0.0 },
-    angularVelocity: { x: 0.0, y: 0.0, z: 0.0 },
+    mpu_avg: { x: 1.0, y: 1.0, z: 1.0 },
+    mpu_max: { x: 1.0, y: 1.0, z: 1.0 },
+    mpu_rot: { x: 1.0, y: 1.0, z: 1.0 },
   },
 };
 
@@ -67,33 +69,34 @@ function backfillComponent(incomingData, component, key) {
 
 function setData(incomingData) {
   try {
-    const parsedIncomingData = JSON.parse(incomingData);
-    data = parsedIncomingData;
+    data = incomingData;
 
     if (Object.keys(data).length === 0) {
       data = cloneObject(defaultData);
     }
 
-    backfillRoot(parsedIncomingData, "time");
+    backfillRoot(incomingData, "sys_time");
 
-    backfillRoot(parsedIncomingData, "bme");
-    backfillComponent(parsedIncomingData, "bme", "temperature");
-    backfillComponent(parsedIncomingData, "bme", "humidity");
-    backfillComponent(parsedIncomingData, "bme", "pressure");
+    backfillRoot(incomingData, "bme");
+    backfillComponent(incomingData, "bme", "bmp_altitude");
+    backfillComponent(incomingData, "bme", "bmp_humidity");
+    backfillComponent(incomingData, "bme", "bmp_pressure");
+    backfillComponent(incomingData, "bme", "bmp_temp");
 
-    backfillRoot(parsedIncomingData, "gps");
-    backfillComponent(parsedIncomingData, "gps", "latitude");
-    backfillComponent(parsedIncomingData, "gps", "longitude");
-    backfillComponent(parsedIncomingData, "gps", "altitude");
+    backfillRoot(incomingData, "gps");
+    backfillComponent(incomingData, "gps", "gps_latitude");
+    backfillComponent(incomingData, "gps", "gps_longitude");
+    backfillComponent(incomingData, "gps", "gps_altitude");
+    backfillComponent(incomingData, "gps", "gps_temp");
 
-    backfillRoot(parsedIncomingData, "mpu");
-    backfillComponent(parsedIncomingData, "mpu", "acceleration");
-    backfillComponent(parsedIncomingData, "mpu", "rotation");
-    backfillComponent(parsedIncomingData, "mpu", "angularVelocity");
+    backfillRoot(incomingData, "mpu");
+    backfillComponent(incomingData, "mpu", "mpu_avg");
+    backfillComponent(incomingData, "mpu", "mpu_max");
+    backfillComponent(incomingData, "mpu", "mpu_rot");
 
-    pushChartData(tempChart, data.bme.temperature);
-    pushChartData(pressureChart, data.bme.pressure);
-    pushChartData(altitudeChart, data.gps.altitude);
+    pushChartData(tempChart, data.bme.bmp_temp);
+    pushChartData(pressureChart, data.bme.bmp_pressure);
+    pushChartData(altitudeChart, data.gps.gps_altitude);
   } catch (err) {
     data = cloneObject(defaultData);
     console.log("error", err);
@@ -148,7 +151,10 @@ async function init() {
   initCharts();
   setData((await get(child(dbRef, "LoRa/"))).val());
 
-  const map = L.map("map").setView([data.gps.latitude, data.gps.longitude], 13);
+  const map = L.map("map").setView(
+    [data.gps.gps_latitude, data.gps.gps_longitude],
+    13,
+  );
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -156,7 +162,10 @@ async function init() {
       '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
 
-  const marker = L.marker([data.gps.latitude, data.gps.longitude]).addTo(map);
+  const marker = L.marker([
+    data.gps.gps_latitude,
+    data.gps.gps_longitude,
+  ]).addTo(map);
 
   function setMarkerLocation(lat, lng) {
     const newLoc = new L.LatLng(lat, lng);
@@ -166,8 +175,8 @@ async function init() {
   const loraRef = ref(db, "LoRa/");
   onValue(loraRef, async (snapshot) => {
     setData(snapshot.val());
-    map.flyTo([data.gps.latitude, data.gps.longitude], 14);
-    setMarkerLocation(data.gps.latitude, data.gps.longitude);
+    map.flyTo([data.gps.gps_latitude, data.gps.gps_longitude], 14);
+    setMarkerLocation(data.gps.gps_latitude, data.gps.gps_longitude);
   });
 }
 
