@@ -12,8 +12,8 @@ std::uint8_t constexpr CHIP_ADDR = 0x76;
 namespace bmp {
 
 Adafruit_BMP280 bmp_obj;
+Data data;
 bool init_success = false;
-std::optional<Data> data;
 
 void init() {
     init_success = bmp_obj.begin(CHIP_ADDR, CHIP_BME);
@@ -24,9 +24,7 @@ void init() {
 
 void get_bmp([[maybe_unused]] void *pvParameters) {
     for (;;) {
-        if (!init_success) {
-            data = std::nullopt;
-        } else {
+        if (init_success) {
             data = Data{.temperature = bmp_obj.readTemperature(),
                         .pressure = bmp_obj.readPressure(),
                         .altitude = bmp_obj.readAltitude()};
@@ -34,34 +32,30 @@ void get_bmp([[maybe_unused]] void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
+
 void print_data([[maybe_unused]] void *pvParameters) {
     for (;;) {
-        pretty_print(data);
+        pretty_print();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-void pretty_print(std::optional<Data> const &bmp_data) {
-    if (!bmp_data) {
-        Serial.println("BMP data unavailable.");
-    } else {
-        Serial.print("[Temperature] ");
-        Serial.print(data->temperature);
-        Serial.println("°C");
+void pretty_print() {
+    Serial.print("[Temperature] ");
+    Serial.print(data.temperature);
+    Serial.println("°C");
 
-        Serial.print("[Pressure] ");
-        Serial.print(data->get_as_hpa());
-        Serial.println("hPa");
+    Serial.print("[Pressure] ");
+    Serial.print(data.hpa());
+    Serial.println("hPa");
 
-        Serial.print("[Altitude] ");
-        Serial.print(data->altitude);
-        Serial.println("m");
+    Serial.print("[Altitude] ");
+    Serial.print(data.altitude);
+    Serial.println("m");
 
-        Serial.println();
-    }
+    Serial.println();
 }
 
-std::optional<Data> get_data() { return data; }
+Data get_data() { return data; }
 
-float Data::get_as_hpa() { return bmp_obj.readPressure() / 100.0F; }
 } // namespace bmp
