@@ -27,6 +27,8 @@
             let readIndicatorValue = 1;
             
             setTimeout(read, 1000);
+            
+            readScale();
 
             function read() {
                 readCountValue = readCount.value;
@@ -64,6 +66,17 @@
                     .catch(er => {
                         console.log(er);
                         calibrateButton.disabled = false
+                    });
+            }
+
+            function readScale() {
+                fetch("/get_scale")
+                    .then(response => response.text())
+                    .then(response => {
+                        scaleValueInput.value = response;
+                    })
+                    .catch(er => {
+                        console.log(er);
                     });
             }
         </script>
