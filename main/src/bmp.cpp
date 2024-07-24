@@ -9,11 +9,14 @@ constexpr std::uint8_t CHIP_BME = 0x60;
 [[maybe_unused]] constexpr std::uint8_t CHIP_BMP = 0x58;
 constexpr std::uint8_t CHIP_ADDR = 0x76;
 
-namespace bmp {
-
+namespace {
 Adafruit_BMP280 bmp_obj;
-Data data;
 bool init_success = false;
+
+bmp::Data data;
+} // namespace
+
+namespace bmp {
 
 void init() {
     init_success = bmp_obj.begin(CHIP_ADDR, CHIP_BME);

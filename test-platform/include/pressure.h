@@ -1,13 +1,12 @@
 #pragma once
-#include <algorithm>
 class Pressure {
   private:
     static constexpr unsigned long max_pa = 6000000;
     static constexpr unsigned long pa_per_atm = 101325;
     static constexpr float max_current = 20.f;
 
-    static float min_current;
-    static float pa_per_ma;
+    static inline float min_current = 0;
+    static inline float pa_per_ma = 0;
 
     static auto pa_from_ma(float current) -> float {
         return std::max(0.f, pa_per_ma * (current - min_current));
