@@ -1,12 +1,10 @@
-#ifndef LORA_H
-#define LORA_H
+#pragma once
 #include <HardwareSerial.h>
 
 
 namespace lora
 {
     extern HardwareSerial LoRaWioE5;
-    inline String log_message;
 
     void init();
     void send(String message);
@@ -15,5 +13,3 @@ namespace lora
     bool is_lora_available();
 
 } // namespace lora
-
-#endif

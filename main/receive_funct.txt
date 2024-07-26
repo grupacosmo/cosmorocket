@@ -1,0 +1,19 @@
+
+void receive(void* pvParameters) {
+  for(;;){
+    if (LoRaWioE5.available()) {
+      String receivedMessage = LoRaWioE5.readString();
+      Serial.print("Received message: ");
+      Serial.println(receivedMessage);
+    } else {
+      Serial.println("No message received.");
+    }
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+
+void receive_init(){
+  LoRaWioE5.print("AT+TEST=RXLRPKT\r\n");
+  delay(1000);
+}

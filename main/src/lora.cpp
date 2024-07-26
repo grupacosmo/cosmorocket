@@ -2,15 +2,16 @@
 
 std::uint8_t constexpr TX_pin = 15; //must rename because of conflict with one of libs
 std::uint8_t constexpr RX_pin = 19;
-constexpr std::uint16_t frequency = 868;
-constexpr char spreadingFactor[] = "SF12";
-constexpr std::uint8_t bandwidth = 125;
-constexpr std::uint8_t TXPR = 12;
-constexpr std::uint8_t RXPR = 15;
-constexpr std::uint8_t power = 14;
-constexpr char crc[] = "ON";
-constexpr char IQ[] = "OFF";
-constexpr char NET[] = "OFF";
+std::uint16_t constexpr frequency = 868;
+char constexpr spreadingFactor[] = "SF12";
+std::uint8_t constexpr bandwidth = 125;
+std::uint8_t constexpr TXPR = 12;
+std::uint8_t constexpr RXPR = 15;
+std::uint8_t constexpr power = 14;
+char constexpr crc[] = "ON";
+char constexpr IQ[] = "OFF";
+char constexpr NET[] = "OFF";
+String log_message;
 
 
 namespace lora {
@@ -40,20 +41,23 @@ void init() {
   LoRaWioE5.print(atCommand);  // set transmitter in test mode
   delay(1000);
 
+  srand(time(0));  
   // check if lora is available
   is_lora_available();
 
   // setup LoRa for transmitting
-  atCommand = String("AT+TEST=RFCFG, ") + frequency + ", " + spreadingFactor + ", " + bandwidth + ", " + TXPR + ", " + RXPR + ", " + power + ", " + crc + ", " + IQ + ", " + NET + "\r\n";
+  //atCommand = String("AT+TEST=RFCFG, ") + frequency + ", " + spreadingFactor + ", " + bandwidth + ", " + TXPR + ", " + RXPR + ", " + power + ", " + crc + ", " + IQ + ", " + NET;
+  atCommand = "AT+TEST=RFCFG, 868, SF11, 500, 12, 15, 14, ON, OFF, OFF\r\n";
+  Serial.println(atCommand);
 
   LoRaWioE5.print(atCommand);
   delay(1000);
 }
 
 //function for testing sake
+
 String gen_rand() {
   String result = "";
-  srand(time(0));  
   for (int i = 0; i < 17; i++) {
     int random_number =
         rand() % 1001;  
@@ -65,15 +69,18 @@ String gen_rand() {
 }
 
 void send(String message) {
-  LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
+  
+  LoRaWioE5.print("AT+TEST=TXLRSTR, \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\r\n");//LoRaWioE5.print("AT+TEST=TXLRSTR, \"" + message + "\"\r\n");
   // carriage return is essential
 }
 
 void lora_log(void* pvParameters){
   for(;;){
-    String send_message = log_message;
-    send(send_message);
-    vTaskDelay(pdMS_TO_TICKS(500));
+    log_message = gen_rand();
+    String send_message = log_message;//;
+    send("ABCabc");
+    //Serial.println(log_message);
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
 }
