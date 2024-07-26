@@ -2,6 +2,6 @@
 class AsyncWebServer;
 
 namespace LoadCell {
-    bool initHX711();
-    void initLoadCellEndpoints(AsyncWebServer &server);
-}
+auto init_hx711() -> bool;
+auto init_load_cell_endpoints(AsyncWebServer &server) -> void;
+} // namespace LoadCell

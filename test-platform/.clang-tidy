@@ -1,0 +1,7 @@
+---
+Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,readability-identifier-naming'
+CheckOptions:
+    readability-identifier-naming.ClassCase: CamelCase
+    readability-identifier-naming.ConceptCase: CamelCase
+    readability-identifier-naming.FunctionCase: lower_case
+    readability-identifier-naming.VariableCase: lower_case

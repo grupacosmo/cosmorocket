@@ -1,89 +1,88 @@
 #include "loadcell.h"
+#include "ESPAsyncWebServer.h"
 #include <AsyncWebSocket.h>
-#include <HX711.h>
 #include <EEPROM.h>
+#include <HX711.h>
 
 namespace {
-    struct LoadCellConfiguration {
-        float scale;
-        float offset;
-    };
+struct LoadCellConfiguration {
+    float scale;
+    float offset;
+};
 
-    HX711 loadCell;
+HX711 load_cell;
 
-    constexpr int loadCellDataAddress = 0;
+constexpr int load_cell_data_address = 0;
 
-    constexpr int LOADCELL_DOUT_PIN = 18;
-    constexpr int LOADCELL_SCK_PIN = 23;
+constexpr int loadcell_dout_pin = 18;
+constexpr int loadcell_sck_pin = 23;
 
-
-
-    void persistScaleConfiguration() {
-        LoadCellConfiguration data;
-        data.scale = loadCell.get_scale();
-        data.offset = loadCell.get_offset();
-        Serial.printf("Persisting loadcell configuration. Scale: %f; offset: %f\n", data.scale, data.offset);
-        EEPROM.put(loadCellDataAddress, data);
-        EEPROM.commit();
-    }
+auto persist_scale_configuration() -> void {
+    LoadCellConfiguration data;
+    data.scale = load_cell.get_scale();
+    data.offset = load_cell.get_offset();
+    Serial.printf("Saving loadcell configuration. Scale: %f; offset: %f\n",
+                  data.scale, data.offset);
+    EEPROM.put(load_cell_data_address, data);
+    EEPROM.commit();
 }
+} // namespace
 
 namespace LoadCell {
-    // true - success; false - fail
-    bool initHX711() 
-    {
-        loadCell.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN, 32);
+/// returns true on init succes, false on failure
+auto init_hx711() -> bool {
+    load_cell.begin(loadcell_dout_pin, loadcell_sck_pin, 32);
 
-        if(!EEPROM.begin(sizeof(LoadCellConfiguration))) {
-            Serial.println("An Error has occurred while mounting EEPROM");
-            return false;
-        }
-
-        LoadCellConfiguration eepromData;
-        EEPROM.get(loadCellDataAddress, eepromData);
-
-        if(eepromData.scale > 0.01) {
-            Serial.print("Found epprom data!");
-            Serial.printf(" Setting scale to %f\n Setting offset to %f\n", eepromData.scale, eepromData.offset);
-            loadCell.set_scale(eepromData.scale);
-            loadCell.set_offset(eepromData.offset);
-        }
-
-        return true;
+    if (!EEPROM.begin(sizeof(LoadCellConfiguration))) {
+        Serial.println("An error has occurred while mounting EEPROM");
+        return false;
     }
 
-    void initLoadCellEndpoints(AsyncWebServer &server) 
-    {
-        server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
-            AsyncWebParameter *countParam = request->getParam("count");
-            int count = 1;
-            if(countParam) {
-            count = countParam->value().toInt();
-            }
-            float value = loadCell.get_units(count);
-            request->send(200, "text/plain", String(value, 10));
-        });
+    LoadCellConfiguration eeprom_data;
+    EEPROM.get(load_cell_data_address, eeprom_data);
 
-        server.on("/tare", HTTP_GET, [](AsyncWebServerRequest *request) {
-            loadCell.tare();
-            persistScaleConfiguration();
-            request->send(200, "text/plain", "1");
-        });
-
-        server.on("/set_scale", HTTP_GET, [](AsyncWebServerRequest *request) {
-            AsyncWebParameter *scaleParam = request->getParam("scale");
-            if(scaleParam) {
-            float scaleValue = scaleParam->value().toFloat();
-            loadCell.set_scale(scaleValue);
-            persistScaleConfiguration();
-            request->send(200, "text/plain", "1");
-            }
-            request->send(200, "text/plain", "missing parameter scale");
-        });
-
-        server.on("/get_scale", HTTP_GET, [](AsyncWebServerRequest *request) {
-            float currentScale = loadCell.get_scale();
-            request->send(200, "text/plain", String(currentScale, 20));
-        });
+    if (eeprom_data.scale > 0.01) {
+        Serial.println("Finding EEPROM data succeeded.");
+        Serial.printf("Setting scale to %f.\nSetting offset to %f\n",
+                      eeprom_data.scale, eeprom_data.offset);
+        load_cell.set_scale(eeprom_data.scale);
+        load_cell.set_offset(eeprom_data.offset);
     }
+
+    return true;
 }
+
+auto init_load_cell_endpoints(AsyncWebServer &server) -> void {
+    server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
+        AsyncWebParameter *count_param = request->getParam("count");
+        int count = 1;
+        if (count_param) {
+            count = count_param->value().toInt();
+        }
+        float value = load_cell.get_units(count);
+        request->send(200, "text/plain", String(value, 10));
+    });
+
+    server.on("/tare", HTTP_GET, [](AsyncWebServerRequest *request) {
+        load_cell.tare();
+        persist_scale_configuration();
+        request->send(200, "text/plain", "1");
+    });
+
+    server.on("/set_scale", HTTP_GET, [](AsyncWebServerRequest *request) {
+        AsyncWebParameter *scale_param = request->getParam("scale");
+        if (scale_param) {
+            float scale_value = scale_param->value().toFloat();
+            load_cell.set_scale(scale_value);
+            persist_scale_configuration();
+            request->send(200, "text/plain", "1");
+        }
+        request->send(200, "text/plain", "missing parameter scale");
+    });
+
+    server.on("/get_scale", HTTP_GET, [](AsyncWebServerRequest *request) {
+        float current_scale = load_cell.get_scale();
+        request->send(200, "text/plain", String(current_scale, 20));
+    });
+}
+} // namespace LoadCell
