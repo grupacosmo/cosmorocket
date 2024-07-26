@@ -7,6 +7,7 @@
 #include "Wire.h"
 #include "config.h"
 #include "pressure.h"
+#include "loadcell.h"
 
 JSONVar readings;
 
@@ -39,6 +40,8 @@ auto setup() -> void {
     init_spiffs();
     init_server();
     init_pressure();
+    LoadCell::initHX711();
+    LoadCell::initLoadCellEndpoints(server);
     print_info();
 }
 

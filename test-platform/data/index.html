@@ -7,29 +7,50 @@
         <link rel="stylesheet" type="text/css" href="style.css">
     </head>
     <body>
-        <div class="topnav">
-            <h1>PRESSURE ABOVE 1ATM </h1>
-        </div>
-        <div class="content">
-            <div class="card-grid">
-                <div class="card">
-                    <p class="card-title"> Pa</p>
-                    <p class="reading"><span id="Pa"></span></p>
-                </div>
-                <div class="card">
-                    <p class="card-title"> atm</p>
-                    <p class="reading"><span id="atm"></span></p>
-                </div>
-                <div class="card">
-                    <p class="card-title"> bar</p>
-                    <p class="reading"><span id="bar"></span></p>
-                </div>
-                <div class="card">
-                    <p class="card-title"> psi</p>
-                    <p class="reading"><span id="psi"></span></p>
+        <section class="pressure-sensor">
+            <div class="topnav">
+                <h1>PRESSURE ABOVE 1ATM </h1>
+            </div>
+            <div class="content">
+                <div class="card-grid">
+                    <div class="card">
+                        <p class="card-title"> Pa</p>
+                        <p class="reading"><span id="Pa"></span></p>
+                    </div>
+                    <div class="card">
+                        <p class="card-title"> atm</p>
+                        <p class="reading"><span id="atm"></span></p>
+                    </div>
+                    <div class="card">
+                        <p class="card-title"> bar</p>
+                        <p class="reading"><span id="bar"></span></p>
+                    </div>
+                    <div class="card">
+                        <p class="card-title"> psi</p>
+                        <p class="reading"><span id="psi"></span></p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
+        <section class="load-cell">
+            <div class="topnav">
+                <h1>Load Cell</h1>
+            </div>
+            <div class="content">
+                <div>
+                    Avarage of <input id="readCount" type="number" min="1" max="99" value="1"> reads. <br>
+                    Value: <div id="value">NaN</div>
+                    <div id="readIndicator">.</div>
+                </div>
+                <div>
+                    <button onclick="tare()" id="tareButton">Tare</button>
+                </div>
+                <div>
+                    Put known weight on scale and insert its weight in input field below, then press "calibrate" button. <br>
+                    <input id="scaleValue"> <button onclick="calibrate()" id="calibrateButton">calibrate</button>
+                </div>
+            </div>
+        </section>
         <script src="script.js"></script>
     </body>
 </html>
