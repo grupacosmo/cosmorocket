@@ -1,16 +1,17 @@
 #include "Arduino.h"
-#include "Arduino_JSON.h"
 #include "ESPAsyncWebServer.h"
 #include "INA226.h"
 #include "SPIFFS.h"
 #include "WiFi.h"
 #include "Wire.h"
 #include "config.h"
+#include "loadcell.h"
 #include "pressure.h"
+#include <Arduino_JSON.h>
 
 JSONVar readings;
 
-INA226 INA(0x40);
+INA226 ina(0x40);
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
@@ -39,15 +40,16 @@ auto setup() -> void {
     init_spiffs();
     init_server();
     init_pressure();
+    LoadCell::init_hx711();
     print_info();
 }
 
 auto loop() -> void {
-    INA.waitConversionReady();
+    ina.waitConversionReady();
 
-    float current_ma = INA.getCurrent_mA();
+    float current_ma = ina.getCurrent_mA();
     last_pressure = Pressure::relative(current_ma);
-    Serial.printf("Current: %.4fmA | Pascals: %.4f\n", current_ma,
+    Serial.printf("Current: %.4fmA | Pascals: %.4f\r", current_ma,
                   last_pressure.Pa());
 
     notify_clients(get_sensor_readings());
@@ -56,13 +58,13 @@ auto loop() -> void {
 }
 
 auto init_ina() -> void {
-    if (!INA.begin()) {
+    if (!ina.begin()) {
         Serial.println("Could not connect. Fix and Reboot");
     }
 
-    INA.setMaxCurrentShunt(Config::max_current_amperes, Config::shunt_resistor,
+    ina.setMaxCurrentShunt(Config::max_current_amperes, Config::shunt_resistor,
                            false);
-    INA.setAverage(Config::avg);
+    ina.setAverage(Config::avg);
 }
 
 auto init_wifi() -> void {
@@ -89,6 +91,7 @@ auto init_server() -> void {
         request->send(SPIFFS, "/index.html", "text/html");
     });
 
+    LoadCell::init_load_cell_endpoints(server);
     server.serveStatic("/", SPIFFS, "/");
 
     server.begin();
@@ -98,18 +101,18 @@ auto init_server() -> void {
 }
 
 auto init_pressure() -> void {
-    INA.waitConversionReady();
-    float min_current = INA.getCurrent_mA();
+    ina.waitConversionReady();
+    float min_current = ina.getCurrent_mA();
 
-    for (std::size_t i = 0; i < 9; ++i) {
-        INA.waitConversionReady();
-        float current = INA.getCurrent_mA();
+    for (std::size_t i = 1; i < 10; ++i) {
+        ina.waitConversionReady();
+        float current = ina.getCurrent_mA();
 
         if (current < min_current) {
             min_current = current;
         }
 
-        Serial.printf("Setting minimum current %zu/10\n", i + 1);
+        Serial.printf("Calculating minimum current %zu/10\r", i + 1);
     }
 
     Pressure::set_min_current(min_current);
@@ -129,8 +132,8 @@ auto get_sensor_readings() -> String {
     readings["bar"] = String(last_pressure.bar());
     readings["atm"] = String(last_pressure.atm());
 
-    String jsonString = JSON.stringify(readings);
-    return jsonString;
+    String json_string = JSON.stringify(readings);
+    return json_string;
 }
 
 auto notify_clients(String sensorReadings) -> void {
@@ -138,12 +141,12 @@ auto notify_clients(String sensorReadings) -> void {
 }
 
 auto handle_web_socket_message(void *arg, uint8_t *data, size_t len) -> void {
-    AwsFrameInfo *info = (AwsFrameInfo *)arg;
+    auto *info = static_cast<AwsFrameInfo *>(arg);
     if (info->final && info->index == 0 && info->len == len &&
         info->opcode == WS_TEXT) {
-        String sensorReadings = get_sensor_readings();
-        Serial.print(sensorReadings);
-        notify_clients(sensorReadings);
+        String sensor_readings = get_sensor_readings();
+        Serial.print(sensor_readings);
+        notify_clients(sensor_readings);
     }
 }
 
