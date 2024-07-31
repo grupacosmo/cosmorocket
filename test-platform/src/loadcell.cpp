@@ -3,6 +3,7 @@
 #include <AsyncWebSocket.h>
 #include <EEPROM.h>
 #include <HX711.h>
+#include <JSON.h>
 
 namespace {
 struct LoadCellConfiguration {
@@ -11,6 +12,7 @@ struct LoadCellConfiguration {
 };
 
 HX711 load_cell;
+JSONVar wsPacket;
 
 constexpr int load_cell_data_address = 0;
 
@@ -48,8 +50,25 @@ auto init_hx711() -> bool {
         load_cell.set_scale(eeprom_data.scale);
         load_cell.set_offset(eeprom_data.offset);
     }
+    unsigned long time;
+    unsigned long time2;
+    unsigned long diff;
+    float value;
 
     return true;
+}
+
+void loadCellTask(void *params) {
+    AsyncWebSocket *ws = (AsyncWebSocket*) params;
+    for(;;) {
+        float value = load_cell.get_units();
+        wsPacket["Type"] = "LoadCell";
+        wsPacket["Value"] = String(value, 10);
+        
+        ws->textAll(JSON.stringify(wsPacket));
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
 }
 
 auto init_load_cell_endpoints(AsyncWebServer &server) -> void {

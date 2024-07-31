@@ -19,13 +19,13 @@ Pressure last_pressure = Pressure::empty();
 
 auto init_wifi() -> void;
 auto init_spiffs() -> void;
-auto init_ina() -> void;
+// auto init_ina() -> void;
 auto init_server() -> void;
 auto init_web_socket() -> void;
-auto init_pressure() -> void;
+// auto init_pressure() -> void;
 auto print_info() -> void;
 
-auto get_sensor_readings() -> String;
+// auto get_sensor_readings() -> String;
 auto notify_clients(String sensorReadings) -> void;
 auto handle_web_socket_message(void *arg, uint8_t *data, size_t len) -> void;
 auto on_event(AsyncWebSocket *server, AsyncWebSocketClient *client,
@@ -35,37 +35,44 @@ auto setup() -> void {
     Serial.begin(Config::baud_rate);
     Wire.begin(Config::sda, Config::scl);
 
-    init_ina();
-    init_wifi();
-    init_spiffs();
-    init_server();
-    init_pressure();
+    // init_ina();
+    // init_wifi();
+    // init_spiffs();
+    // init_server();
+    // init_pressure();
     LoadCell::init_hx711();
     print_info();
 }
 
-auto loop() -> void {
-    ina.waitConversionReady();
 
-    float current_ma = ina.getCurrent_mA();
-    last_pressure = Pressure::relative(current_ma);
-    Serial.printf("Current: %.4fmA | Pascals: %.4f\r", current_ma,
-                  last_pressure.Pa());
+void inaTask(void *params) {
+    for(;;) {
+        // while(!ina.isConversionReady()) {
+        //     vTaskDelay(pdMS_TO_TICKS(10));
+        // }
 
-    notify_clients(get_sensor_readings());
+        // float current_ma = ina.getCurrent_mA();
+        // last_pressure = Pressure::relative(current_ma);
+        // Serial.printf("Current: %.4fmA | Pascals: %.4f\r", current_ma,
+        //             last_pressure.Pa());
 
-    ws.cleanupClients();
-}
-
-auto init_ina() -> void {
-    if (!ina.begin()) {
-        Serial.println("Could not connect. Fix and Reboot");
+        // notify_clients(get_sensor_readings());
+        ws.cleanupClients();
     }
-
-    ina.setMaxCurrentShunt(Config::max_current_amperes, Config::shunt_resistor,
-                           false);
-    ina.setAverage(Config::avg);
 }
+
+auto loop() -> void {
+}
+
+// auto init_ina() -> void {
+//     if (!ina.begin()) {
+//         Serial.println("Could not connect. Fix and Reboot");
+//     }
+
+//     ina.setMaxCurrentShunt(Config::max_current_amperes, Config::shunt_resistor,
+//                            false);
+//     ina.setAverage(Config::avg);
+// }
 
 auto init_wifi() -> void {
     WiFi.mode(WIFI_STA);
@@ -100,23 +107,23 @@ auto init_server() -> void {
     server.addHandler(&ws);
 }
 
-auto init_pressure() -> void {
-    ina.waitConversionReady();
-    float min_current = ina.getCurrent_mA();
+// auto init_pressure() -> void {
+//     ina.waitConversionReady();
+//     float min_current = ina.getCurrent_mA();
 
-    for (std::size_t i = 1; i < 10; ++i) {
-        ina.waitConversionReady();
-        float current = ina.getCurrent_mA();
+//     for (std::size_t i = 1; i < 10; ++i) {
+//         ina.waitConversionReady();
+//         float current = ina.getCurrent_mA();
 
-        if (current < min_current) {
-            min_current = current;
-        }
+//         if (current < min_current) {
+//             min_current = current;
+//         }
 
-        Serial.printf("Calculating minimum current %zu/10\r", i + 1);
-    }
+//         Serial.printf("Calculating minimum current %zu/10\r", i + 1);
+//     }
 
-    Pressure::set_min_current(min_current);
-}
+//     Pressure::set_min_current(min_current);
+// }
 
 auto print_info() -> void {
     Serial.print("IP: ");
@@ -126,28 +133,29 @@ auto print_info() -> void {
     Serial.printf("Min current: %f\n", Pressure::get_min_current());
 }
 
-auto get_sensor_readings() -> String {
-    readings["Pa"] = String(last_pressure.Pa());
-    readings["psi"] = String(last_pressure.psi());
-    readings["bar"] = String(last_pressure.bar());
-    readings["atm"] = String(last_pressure.atm());
+// auto get_sensor_readings() -> String {
+//     readings["Type"] = "pressure";
+//     readings["Pa"] = String(last_pressure.Pa());
+//     readings["psi"] = String(last_pressure.psi());
+//     readings["bar"] = String(last_pressure.bar());
+//     readings["atm"] = String(last_pressure.atm());
 
-    String json_string = JSON.stringify(readings);
-    return json_string;
-}
+//     String json_string = JSON.stringify(readings);
+//     return json_string;
+// }
 
 auto notify_clients(String sensorReadings) -> void {
     ws.textAll(sensorReadings);
 }
 
 auto handle_web_socket_message(void *arg, uint8_t *data, size_t len) -> void {
-    auto *info = static_cast<AwsFrameInfo *>(arg);
-    if (info->final && info->index == 0 && info->len == len &&
-        info->opcode == WS_TEXT) {
-        String sensor_readings = get_sensor_readings();
-        Serial.print(sensor_readings);
-        notify_clients(sensor_readings);
-    }
+    // auto *info = static_cast<AwsFrameInfo *>(arg);
+    // if (info->final && info->index == 0 && info->len == len &&
+    //     info->opcode == WS_TEXT) {
+    //     String sensor_readings = get_sensor_readings();
+    //     Serial.print(sensor_readings);
+    //     notify_clients(sensor_readings);
+    // }
 }
 
 auto on_event(AsyncWebSocket *server, AsyncWebSocketClient *client,

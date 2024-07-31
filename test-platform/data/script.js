@@ -1,3 +1,6 @@
+const LOCALSTORAGE_KEY_LC_HISTORY = "LCHistory";
+const LOCALSTORAGE_KEY_PR_HISTORY = "PRHistory";
+
 // loadcell
 let readCount = document.getElementById("readCount");
 let readValue = document.getElementById("value");
@@ -16,7 +19,7 @@ window.addEventListener('load', onload);
 
 function onload(event) {
     initWebSocket();
-    setTimeout(loadCellRead, 1000);
+    // setTimeout(loadCellRead, 1000);
     loadCellReadScale();
 }
 
@@ -46,32 +49,71 @@ function onClose(event) {
 // Function that receives the message from the ESP32 with the readings
 function onMessage(event) {
     console.log(event.data);
-    var myObj = JSON.parse(event.data);
-    var keys = Object.keys(myObj);
+    let myObj;
+    try {
+        myObj = JSON.parse(event.data);
+    }catch {
+        return;
+    }
 
-    for (var i = 0; i < keys.length; i++){
-        var key = keys[i];
-        document.getElementById(key).innerHTML = myObj[key];
+    if(myObj["Type"] == "Pressure") {
+        onPressureReading(myObj);
+    }
+    else if(myObj["Type"] == "LoadCell") {
+        onLoadCellReading(myObj);
+    }
+    else {
+        console.log("unknown packet");
     }
 }
 
-function loadCellRead() {
-    readCountValue = readCount.value;
-    readIndicatorValue = (readIndicatorValue + 1) % 5
-    readIndicator.innerText = "o".repeat(readIndicatorValue) + ".";
-    fetch("/get?count="+readCountValue)
-        .then(response => response.text())
-        .then(response => {
-            readValue.innerText = response;
-            readIndicator.innerText = "o".repeat(readIndicatorValue) + "o";
-            setTimeout(loadCellRead, 500);
-        })
-        .catch(er => {
-            console.log(er);
-            console.log("start read again with `read()`");
-            readIndicator.innerText = "err";
-        });
+function onLoadCellReading(myObj) {
+    let value = myObj["Value"]
+    readValue.innerText = value;
+    let storage = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY_LC_HISTORY) || "{}")
+    storage.items.push({
+        timestamp: Date.now(),
+        value
+    });
+    localStorage.setItem(LOCALSTORAGE_KEY_LC_HISTORY, JSON.stringify(storage));
 }
+
+function onPressureReading(myObj) {
+    var keys = Object.keys(myObj);
+
+    let storage = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY_LC_HISTORY) || "{}")
+
+    let item = {
+        timestamp: Date.now()
+    };
+
+    for (var i = 0; i < keys.length; i++){
+        var key = keys[i];
+        item[key] = myObj[key];  
+        document.getElementById(key).innerHTML = myObj[key];
+    }
+
+    storage.items.push(item);
+    localStorage.setItem(LOCALSTORAGE_KEY_LC_HISTORY, JSON.stringify(storage));
+}
+
+// function loadCellRead() {
+//     readCountValue = readCount.value;
+//     readIndicatorValue = (readIndicatorValue + 1) % 5
+//     readIndicator.innerText = "o".repeat(readIndicatorValue) + ".";
+//     fetch("/get?count="+readCountValue)
+//         .then(response => response.text())
+//         .then(response => {
+//             readValue.innerText = response;
+//             readIndicator.innerText = "o".repeat(readIndicatorValue) + "o";
+//             setTimeout(loadCellRead, 500);
+//         })
+//         .catch(er => {
+//             console.log(er);
+//             console.log("start read again with `read()`");
+//             readIndicator.innerText = "err";
+//         });
+// }
 
 function loadCellTare() {
     tareButton.disabled = true;
