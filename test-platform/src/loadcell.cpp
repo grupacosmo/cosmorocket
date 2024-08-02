@@ -58,6 +58,7 @@ auto init_hx711() -> bool {
     return true;
 }
 
+/// @param params AsyncWebSocket*
 void loadCellTask(void *params) {
     AsyncWebSocket *ws = (AsyncWebSocket*) params;
     for(;;) {
