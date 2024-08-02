@@ -136,7 +136,7 @@ auto print_info() -> void {
 }
 
 auto get_sensor_readings() -> String {
-    readings["Type"] = "pressure";
+    readings["Type"] = "Pressure";
     readings["Pa"] = String(last_pressure.Pa());
     readings["psi"] = String(last_pressure.psi());
     readings["bar"] = String(last_pressure.bar());

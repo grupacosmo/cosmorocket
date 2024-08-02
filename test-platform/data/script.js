@@ -43,7 +43,7 @@ function onOpen(event) {
 
 function onClose(event) {
     console.log('Connection closed');
-    setTimeout(initWebSocket, 2000);
+    setTimeout(initWebSocket, 1000);
 }
 
 // Function that receives the message from the ESP32 with the readings
@@ -53,6 +53,7 @@ function onMessage(event) {
     try {
         myObj = JSON.parse(event.data);
     }catch {
+        console.warn("MALFORMED input");
         return;
     }
 
@@ -68,6 +69,7 @@ function onMessage(event) {
 }
 
 function onLoadCellReading(myObj) {
+    console.log("load cell input");
     let value = myObj["Value"]
     readValue.innerText = value;
     let storage = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY_LC_HISTORY) || "{}")
@@ -79,6 +81,7 @@ function onLoadCellReading(myObj) {
 }
 
 function onPressureReading(myObj) {
+    console.log("pressure input");
     var keys = Object.keys(myObj);
 
     let storage = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY_LC_HISTORY) || "{}")
