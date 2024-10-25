@@ -7,6 +7,7 @@
 #include "led.h"
 #include "lora.h"
 #include "memory.h"
+#include "mpu.h"
 
 void setup() {
     Wire.begin(SDA_PIN, SCL_PIN);
@@ -17,6 +18,7 @@ void setup() {
     gps::init();
     bmp::init();
     lora::init();
+    mpu::init();
 
     xTaskCreate(led::blink_task, "blink", DEFAULT_TASK_SIZE, nullptr, 1,
                 nullptr);
@@ -25,6 +27,7 @@ void setup() {
     xTaskCreate(bmp::print_data, "bmp print", DEFAULT_TASK_SIZE, nullptr, 1,
                 nullptr);
     xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
+    xTaskCreate(mpu::mpu_task, "mpu", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
 
     memory::print_data();
     memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};

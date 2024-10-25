@@ -11,4 +11,16 @@ struct Data {
     float rot_y;
     float rot_z;
 };
+
+static unsigned int count = 0;
+static Data internal{};
+static float gyro_res, accel_res;
+static bool init_success = false;
+
+void init();
+bool calibrate();
+void mpu_task(void *pvParameters);
+void mpu_print(void *pvParameters);
+Data get_mpu();
+
 } // namespace mpu
