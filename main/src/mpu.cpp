@@ -5,6 +5,7 @@ namespace mpu {
 
 MPU6050 mpudev;
 
+static SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
 static unsigned int count = 0;
 static Data internal{};
 static float gyro_res = 0, accel_res = 0;
@@ -36,6 +37,12 @@ void init() {
         return;
     }
 
+    if (mutex == nullptr) {
+        // die
+        Serial.println("Couldn't allocate resources for mutex!");
+        return;
+    }
+
     init_success = true;
     accel_res = mpudev.get_acce_resolution() / 2;
     gyro_res = mpudev.get_gyro_resolution() / 2;
@@ -47,6 +54,8 @@ void init() {
  * @return Max g force, Average g force, Average rotation.
  */
 Data get_mpu() {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+
     Data dane{
         .max_x = internal.max_x,
         .max_y = internal.max_y,
@@ -60,6 +69,8 @@ Data get_mpu() {
 
     count = 0;
     internal = {};
+
+    xSemaphoreGive(mutex);
 
     return dane;
 }
@@ -86,6 +97,8 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
         fgy = abs(gy * gyro_res);
         fgz = abs(gz * gyro_res);
 
+        xSemaphoreTake(mutex, portMAX_DELAY);
+
         if (internal.max_x < fax)
             internal.max_x = fax;
         if (internal.max_y < fay)
@@ -102,6 +115,8 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
 
         count++;
 
+        xSemaphoreGive(mutex);
+
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
@@ -109,7 +124,21 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
 /**
  * @brief Consume and display collected data.
  */
-void pretty_print() {}
+void pretty_print() {
+    Data data = get_mpu();
+    Serial.printf("[Max g force]\n"
+                  "[x, y, z]\n"
+                  "%f, %f, %f\n"
+                  "[Average g force]\n"
+                  "[x, y, z]\n"
+                  "%f, %f, %f\n"
+                  "[Average rotation]\n"
+                  "[x, y, z]\n"
+                  "%f, %f, %f\n",
+                  data.max_x, data.max_y, data.max_z, data.avg_x, data.avg_y,
+                  data.avg_z, data.rot_x, data.rot_y, data.rot_z);
+    Serial.flush();
+}
 
 /**
  * @brief Task that consumes and displays collected data repeatedly.
@@ -120,20 +149,7 @@ void mpu_print([[maybe_unused]] void *pvParameters) {
         vTaskDelete(NULL);
 
     for (;;) {
-        Data data = get_mpu();
-        Serial.printf("[Max g force]\n"
-                      "[x, y, z]\n"
-                      "%f, %f, %f\n"
-                      "[Average g force]\n"
-                      "[x, y, z]\n"
-                      "%f, %f, %f\n"
-                      "[Average rotation]\n"
-                      "[x, y, z]\n"
-                      "%f, %f, %f\n",
-                      data.max_x, data.max_y, data.max_z, data.avg_x,
-                      data.avg_y, data.avg_z, data.rot_x, data.rot_y,
-                      data.rot_z);
-        Serial.flush();
+        pretty_print();
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
