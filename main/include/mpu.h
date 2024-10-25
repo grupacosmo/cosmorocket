@@ -1,5 +1,7 @@
 #pragma once
+
 namespace mpu {
+
 struct Data {
     float max_x;
     float max_y;
@@ -11,11 +13,6 @@ struct Data {
     float rot_y;
     float rot_z;
 };
-
-static unsigned int count = 0;
-static Data internal{};
-static float gyro_res, accel_res;
-static bool init_success = false;
 
 void init();
 bool calibrate();
