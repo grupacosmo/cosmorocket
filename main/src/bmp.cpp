@@ -15,7 +15,7 @@ namespace {
 
     Adafruit_BMP280 bmp_obj;
 
-    void pretty_print(const Data& data) {
+    void print_debug(const Data& data) {
         Serial.print("[Temperature] ");
         Serial.print(data.temperature);
         Serial.println("°C");
@@ -40,12 +40,12 @@ void init() {
 
 void get_bmp(void *pvParameters) {
     for (;;) {
-        if (!bmp_obj.sensorID) { // TODO Test should be 0 if not inited
+        if (bmp_obj.sensorID != 0) { // TODO Test should be 0 if not inited
             data = Data{.temperature = bmp_obj.readTemperature(),
                         .pressure = bmp_obj.readPressure(),
                         .altitude = bmp_obj.readAltitude(SEALEVELPRESSURE_HPA)};
 #ifdef DEBUG
-            pretty_print(data);
+            print_debug(&data);
 #endif
         }
         vTaskDelay(pdMS_TO_TICKS(500));
