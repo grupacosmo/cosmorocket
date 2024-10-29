@@ -27,6 +27,8 @@ void init() {
 }
 
 void gps_task([[maybe_unused]] void *pvParameters) {
+    Data gps_data;
+
     for (;;) {
         while (GPSSerial.available()) {
             bool msg_finished = tiny_gps.encode(GPSSerial.read());
