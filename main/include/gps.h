@@ -2,10 +2,11 @@
 #include <HardwareSerial.h>
 
 namespace gps {
+
 struct Time {
-    uint8_t hours{};
-    uint8_t minutes{};
-    uint8_t seconds{};
+    std::uint8_t hours{};
+    std::uint8_t minutes{};
+    std::uint8_t seconds{};
 };
 
 struct Data {
@@ -17,7 +18,5 @@ struct Data {
 void init();
 void gps_task(void *pvParameters);
 void print_data(void *pvParameters);
-Data get_data();
-bool data_is_available();
 
 } // namespace gps
