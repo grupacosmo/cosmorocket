@@ -4,9 +4,9 @@
 namespace bmp {
 
 struct Data {
-    float temperature;
-    float pressure;
-    float altitude;
+    float temperature{};
+    float pressure{};
+    float altitude{};
 };
 
 void init();

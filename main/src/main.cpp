@@ -24,9 +24,11 @@ void setup() {
     xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
     xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
 
-    memory::print_data();
     memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
-    memory::save_config(memory::config);
+    memory::save_config();
+#ifdef DEBUG
+    memory::print_debug();
+#endif
 }
 
 void loop() {}

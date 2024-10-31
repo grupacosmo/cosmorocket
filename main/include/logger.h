@@ -5,6 +5,7 @@
 #include <cstdint>
 
 namespace logger {
+
 struct Packet {
     bmp::Data bmp_data{};
     mpu::Data mpu_data{};
@@ -15,4 +16,5 @@ struct Packet {
 };
 
 String serialize(Packet &packet);
+
 } // namespace logger

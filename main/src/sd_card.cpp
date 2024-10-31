@@ -1,11 +1,17 @@
 #include "sd_card.h"
+
 namespace sd {
 
+// Private
 namespace {
+
+constexpr std::uint8_t DEFAULT_DATA_PIN = 32U;
 fs::File File;
-}
+
+} // namespace
+
 void init() {
-    if (!SD.begin(sd::DEFAULT_DATA_PIN)) {
+    if (!SD.begin(DEFAULT_DATA_PIN)) {
         Serial.println("Card Mount Failed");
         return;
     }
@@ -19,14 +25,17 @@ void init() {
 }
 
 void write(const char *data, const char *filename = "/data.csv") {
-    if (SD.exists(filename))
+    if (SD.exists(filename)) {
         File = SD.open(filename, FILE_APPEND);
-    else
+    } else {
         File = SD.open(filename, FILE_WRITE);
+    }
+
     if (!File) {
         Serial.println("Failed to open file for writing");
         return;
     }
+
     File.println(data);
     File.close();
 }
@@ -37,17 +46,24 @@ void write(const String &data, const String &filename = "/data.csv") {
 
 void read(const char *filename = "/data.csv") {
     File = SD.open(filename, FILE_READ);
+
     if (!File) {
         Serial.println("Failed to open file for reading");
         return;
     }
+
     if (!File.available()) {
         Serial.println("File empty");
     }
+
     while (File.available()) {
         Serial.write(File.read());
     }
     File.close();
 }
-void read(const String &filename = "/data.csv") { read(filename.c_str()); }
+
+void read(const String &filename = "/data.csv") {
+    read(filename.c_str());
+}
+
 } // namespace sd

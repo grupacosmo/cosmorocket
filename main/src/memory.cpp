@@ -1,21 +1,32 @@
 #include "memory.h"
 
-#define CONFIG_ADDR 0
-
 namespace memory {
+
+// Private
+namespace {
+
+constexpr std::uint8_t CONFIG_ADDR = 0;
+constexpr std::size_t MEMORY_SIZE = 512;
+
+Config config;
+
+} // namespace
 
 void init() {
     EEPROM.begin(MEMORY_SIZE);
     load_config(config);
 }
 
-void save_config(Config &data) {
-    EEPROM.put(CONFIG_ADDR, data);
+void save_config() {
+    EEPROM.put(CONFIG_ADDR, config);
     EEPROM.commit();
 }
-void load_config(Config &data) { EEPROM.get(CONFIG_ADDR, data); }
 
-void print_data() {
+void load_config() {
+    EEPROM.get(CONFIG_ADDR, config);
+}
+
+void print_debug() {
     Serial.print("Read int: ");
     Serial.println(config.intValue);
     Serial.print("Read float: ");
@@ -23,4 +34,5 @@ void print_data() {
     Serial.print("Read string: ");
     Serial.println(config.stringValue);
 }
+
 } // namespace memory
