@@ -8,13 +8,11 @@ namespace {
 constexpr std::uint8_t CONFIG_ADDR = 0;
 constexpr std::size_t MEMORY_SIZE = 512;
 
-Config config;
-
 } // namespace
 
 void init() {
     EEPROM.begin(MEMORY_SIZE);
-    load_config(config);
+    load_config();
 }
 
 void save_config() {
@@ -22,9 +20,7 @@ void save_config() {
     EEPROM.commit();
 }
 
-void load_config() {
-    EEPROM.get(CONFIG_ADDR, config);
-}
+void load_config() { EEPROM.get(CONFIG_ADDR, config); }
 
 void print_debug() {
     Serial.print("Read int: ");

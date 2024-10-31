@@ -9,6 +9,7 @@ struct Config {
     char stringValue[50];
 };
 
+inline Config config;
 void init();
 void save_config();
 void load_config();

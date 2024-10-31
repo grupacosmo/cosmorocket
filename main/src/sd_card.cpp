@@ -62,8 +62,6 @@ void read(const char *filename = "/data.csv") {
     File.close();
 }
 
-void read(const String &filename = "/data.csv") {
-    read(filename.c_str());
-}
+void read(const String &filename = "/data.csv") { read(filename.c_str()); }
 
 } // namespace sd

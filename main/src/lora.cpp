@@ -5,9 +5,10 @@
 
 namespace lora {
 
+HardwareSerial LoRaWioE5(1);
 // Private
 namespace {
-constexpr std::uint8_t TX_PIN = 15; // must rename because of conflict with one of libs
+constexpr std::uint8_t TX_PIN = 15;
 constexpr std::uint8_t RX_PIN = 19;
 
 constexpr std::uint8_t TXPR = 12;
@@ -23,13 +24,11 @@ constexpr char CRC[] = "ON";
 constexpr char IQ[] = "OFF";
 constexpr char NET[] = "OFF";
 
-void send(String message) {
+void send(const String &message) {
     LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
 }
 
 } // namespace
-
-HardwareSerial LoRaWioE5(1);
 
 bool check_availability() {
     LoRaWioE5.println("AT");
@@ -38,7 +37,7 @@ bool check_availability() {
 }
 
 void init() {
-    String atCommand = "AT+MODE=TEST\r\n";
+    String atCommand{"AT+MODE=TEST\r\n"};
     LoRaWioE5.begin(BAUD_RATE, SERIAL_8N1, TX_PIN, RX_PIN);
     LoRaWioE5.print(atCommand);
     delay(1000);
@@ -49,9 +48,10 @@ void init() {
     }
 
     // LoRa setup
-    atCommand = String("AT+TEST=RFCFG, ") + FREQUENCY + ", " + SPREADING_FACTOR +
-                ", " + BANDWIDTH + ", " + TXPR + ", " + RXPR + ", " + POWER +
-                ", " + CRC + ", " + IQ + ", " + NET + "\r\n";
+    atCommand = String("AT+TEST=RFCFG, ") + FREQUENCY + ", " +
+                SPREADING_FACTOR + ", " + BANDWIDTH + ", " + TXPR + ", " +
+                RXPR + ", " + POWER + ", " + CRC + ", " + IQ + ", " + NET +
+                "\r\n";
 
     LoRaWioE5.print(atCommand);
     delay(1000);
