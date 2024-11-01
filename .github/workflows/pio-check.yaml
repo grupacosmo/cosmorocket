@@ -21,4 +21,4 @@ jobs:
         run: pip install --upgrade platformio
 
       - name: Check PlatformIO Project
-        run: pio check --fail-on-defect=high -d ./main
+        run: pio check --fail-on-defect=high -d ${{ github.workspace }}/main
