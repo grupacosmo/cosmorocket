@@ -11,4 +11,4 @@ void write(const String &data);
 void read(const char *filename);
 void read(const String &filename);
 
-}; // namespace sd
+};  // namespace sd

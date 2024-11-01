@@ -25,43 +25,42 @@ constexpr char IQ[] = "OFF";
 constexpr char NET[] = "OFF";
 
 void send(const String &message) {
-    LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
+  LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
 }
 
-} // namespace
+}  // namespace
 
 bool check_availability() {
-    LoRaWioE5.println("AT");
-    delay(1000);
-    return LoRaWioE5.find("OK");
+  LoRaWioE5.println("AT");
+  delay(1000);
+  return LoRaWioE5.find("OK");
 }
 
 void init() {
-    String atCommand{"AT+MODE=TEST\r\n"};
-    LoRaWioE5.begin(BAUD_RATE, SERIAL_8N1, TX_PIN, RX_PIN);
-    LoRaWioE5.print(atCommand);
-    delay(1000);
+  String atCommand{"AT+MODE=TEST\r\n"};
+  LoRaWioE5.begin(BAUD_RATE, SERIAL_8N1, TX_PIN, RX_PIN);
+  LoRaWioE5.print(atCommand);
+  delay(1000);
 
-    if (!check_availability()) {
-        Serial.println("LoRa module is not available");
-        return;
-    }
+  if (!check_availability()) {
+    Serial.println("LoRa module is not available");
+    return;
+  }
 
-    // LoRa setup
-    atCommand = String("AT+TEST=RFCFG, ") + FREQUENCY + ", " +
-                SPREADING_FACTOR + ", " + BANDWIDTH + ", " + TXPR + ", " +
-                RXPR + ", " + POWER + ", " + CRC + ", " + IQ + ", " + NET +
-                "\r\n";
+  // LoRa setup
+  atCommand = String("AT+TEST=RFCFG, ") + FREQUENCY + ", " + SPREADING_FACTOR +
+              ", " + BANDWIDTH + ", " + TXPR + ", " + RXPR + ", " + POWER +
+              ", " + CRC + ", " + IQ + ", " + NET + "\r\n";
 
-    LoRaWioE5.print(atCommand);
-    delay(1000);
+  LoRaWioE5.print(atCommand);
+  delay(1000);
 }
 
 void lora_log([[maybe_unused]] void *pvParameters) {
-    for (;;) {
-        send("");
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
+  for (;;) {
+    send("");
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
 }
 
-} // namespace lora
+}  // namespace lora

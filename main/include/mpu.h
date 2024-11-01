@@ -2,15 +2,15 @@
 namespace mpu {
 
 struct Position {
-    float x{};
-    float y{};
-    float z{};
+  float x{};
+  float y{};
+  float z{};
 };
 
 struct Data {
-    Position max{};
-    Position avg{};
-    Position rot{};
+  Position max{};
+  Position avg{};
+  Position rot{};
 };
 
-} // namespace mpu
+}  // namespace mpu

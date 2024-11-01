@@ -4,9 +4,9 @@
 namespace memory {
 
 struct Config {
-    int intValue;
-    float floatValue;
-    char stringValue[50];
+  int intValue;
+  float floatValue;
+  char stringValue[50];
 };
 
 inline Config config;
@@ -15,4 +15,4 @@ void save_config();
 void load_config();
 void print_debug();
 
-} // namespace memory
+}  // namespace memory
