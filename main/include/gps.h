@@ -4,9 +4,9 @@
 namespace gps {
 
 struct Time {
-  std::uint8_t hours{};
-  std::uint8_t minutes{};
-  std::uint8_t seconds{};
+  uint8_t hours{};
+  uint8_t minutes{};
+  uint8_t seconds{};
 };
 
 struct Data {

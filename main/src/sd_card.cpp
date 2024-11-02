@@ -5,7 +5,7 @@ namespace sd {
 // Private
 namespace {
 
-constexpr std::uint8_t DEFAULT_DATA_PIN = 32U;
+constexpr uint8_t DEFAULT_DATA_PIN = 32U;
 fs::File File;
 
 }  // namespace

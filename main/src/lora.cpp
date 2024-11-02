@@ -8,16 +8,16 @@ namespace lora {
 HardwareSerial LoRaWioE5(1);
 // Private
 namespace {
-constexpr std::uint8_t TX_PIN = 15;
-constexpr std::uint8_t RX_PIN = 19;
+constexpr uint8_t TX_PIN = 15;
+constexpr uint8_t RX_PIN = 19;
 
-constexpr std::uint8_t TXPR = 12;
-constexpr std::uint8_t RXPR = 15;
+constexpr uint8_t TXPR = 12;
+constexpr uint8_t RXPR = 15;
 
-constexpr std::uint16_t BAUD_RATE = 9600;
-constexpr std::uint16_t FREQUENCY = 868;
-constexpr std::uint8_t BANDWIDTH = 125;
-constexpr std::uint8_t POWER = 14;
+constexpr uint16_t BAUD_RATE = 9600;
+constexpr uint16_t FREQUENCY = 868;
+constexpr uint8_t BANDWIDTH = 125;
+constexpr uint8_t POWER = 14;
 
 constexpr char SPREADING_FACTOR[] = "SF12";
 constexpr char CRC[] = "ON";

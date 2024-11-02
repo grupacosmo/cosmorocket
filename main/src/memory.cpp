@@ -5,8 +5,8 @@ namespace memory {
 // Private
 namespace {
 
-constexpr std::uint8_t CONFIG_ADDR = 0;
-constexpr std::size_t MEMORY_SIZE = 512;
+constexpr uint8_t CONFIG_ADDR = 0;
+constexpr size_t MEMORY_SIZE = 512;
 
 }  // namespace
 

@@ -8,10 +8,10 @@ namespace gps {
 
 // Private
 namespace {
-constexpr std::uint16_t BAUD_RATE = 9600;
-constexpr std::uint8_t RX_PIN = 34;
-constexpr std::uint8_t TX_PIN = 12;
-constexpr std::uint8_t SERIAL_NUM = 1;
+constexpr uint16_t BAUD_RATE = 9600;
+constexpr uint8_t RX_PIN = 34;
+constexpr uint8_t TX_PIN = 12;
+constexpr uint8_t SERIAL_NUM = 1;
 
 TinyGPSPlus tiny_gps;
 

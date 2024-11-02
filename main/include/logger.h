@@ -11,9 +11,9 @@ struct Packet {
   bmp::Data bmp_data{};
   mpu::Data mpu_data{};
   gps::Data gps_data{};
-  std::uint32_t sys_time{};
-  std::uint16_t n{};
-  std::uint8_t status{};
+  uint32_t sys_time{};
+  uint16_t n{};
+  uint8_t status{};
 };
 
 String serialize(Packet &packet);
