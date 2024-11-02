@@ -1,19 +1,18 @@
 #pragma once
+#include <cmath>
 namespace bmp {
 void init();
 
 struct Data {
-    float temperature;
-    float pressure;
-    float altitude;
+    float temperature{NAN};
+    float pressure{NAN};
+    float altitude{NAN};
 
-    float get_as_hpa();
+    float hpa() const { return pressure / 100.f; }
 };
-
-inline Data data;
 
 void get_bmp(void *pvParameters);
 void print_data(void *pvParameters);
-Data measurements();
-void pretty_print(Data);
+void pretty_print();
+Data get_data();
 } // namespace bmp

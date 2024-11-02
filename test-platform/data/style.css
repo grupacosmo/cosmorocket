@@ -1,9 +1,9 @@
 html {
     font-family: Arial, Helvetica, sans-serif;
     display: inline-block;
-    text-align: center;
 }
 h1 {
+    text-align: center;
     font-size: 1.8rem;
     color: white;
 }
@@ -13,18 +13,30 @@ h1 {
 }
 body {
     margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    height: 100vh;
+    background-color: black;
 }
+body > * {
+    background-color: white;
+}
+
 .content {
     padding: 50px;
 }
 .card-grid {
-    max-width: 800px;
     margin: 0 auto;
-    display: grid;
-    grid-gap: 2rem;
-    grid-template-columns: repeat(4, minmax(200px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    /* grid-gap: 2rem;
+    grid-template-columns: repeat(4, minmax(200px, 1fr)); */
 }
 .card {
+    flex: 1 0 100px;
+    text-align: center;
     background-color: white;
     box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);
 }
@@ -36,4 +48,8 @@ body {
 .reading {
     font-size: 1.2rem;
     color: #1282A2;
+}
+
+.load-cell {
+    text-align: left;
 }

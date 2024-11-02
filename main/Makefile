@@ -1,9 +1,14 @@
 all:
 	pio -f -c vim run
 
-upload:
-	pio -f -c vim run --target upload
+upload_beam:
+	pio -f -c vim run --target upload --environment ttgo-t-beam
 
+upload_lolin:
+	pio -f -c vim run --target upload --environment lolin32_lite
+	
+check:
+	pio -f -c vim check
 clean:
 	pio -f -c vim run --target clean
 
