@@ -1,59 +1,52 @@
 #include "gps.h"
-#include "TinyGPS++.h"
+
 #include <cstdint>
 
-constexpr uint8_t GPS_SERIAL_NUM = 1;
-constexpr uint8_t GPS_RX_PIN = 34;
-constexpr uint8_t GPS_TX_PIN = 12;
-
-namespace {
-TinyGPSPlus tiny_gps;
-bool data_available = false;
-
-gps::Data gps_data;
-} // namespace
+#include "TinyGPS++.h"
 
 namespace gps {
-HardwareSerial GPSSerial(GPS_SERIAL_NUM);
 
-void init() { GPSSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN); }
+// Private
+namespace {
+constexpr uint16_t BAUD_RATE = 9600;
+constexpr uint8_t RX_PIN = 34;
+constexpr uint8_t TX_PIN = 12;
+constexpr uint8_t SERIAL_NUM = 1;
 
-bool data_is_available() { return data_available; }
-Data get_data() { return gps_data; }
+TinyGPSPlus tiny_gps;
 
-void gps_task([[maybe_unused]] void *pvParameters) {
-    for (;;) {
-        while (GPSSerial.available()) {
-            bool sentence_finished = tiny_gps.encode(GPSSerial.read());
+void print_debug(const Data& gps_data) {
+  Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n", gps_data.lat,
+                gps_data.lng, gps_data.time.hours, gps_data.time.minutes,
+                gps_data.time.seconds);
+}
+}  // namespace
 
-            if (sentence_finished && tiny_gps.location.isValid() &&
-                tiny_gps.time.isValid()) {
-                gps_data.lat = tiny_gps.location.lat();
-                gps_data.lng = tiny_gps.location.lng();
-                gps_data.time.hours = tiny_gps.time.hour();
-                gps_data.time.minutes = tiny_gps.time.minute();
-                gps_data.time.seconds = tiny_gps.time.second();
+HardwareSerial GPSSerial(SERIAL_NUM);
 
-                data_available = true;
-            }
-        }
+void init() { GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN); }
 
-        vTaskDelay(pdMS_TO_TICKS(100));
+void gps_task([[maybe_unused]] void* pvParameters) {
+  Data gps_data;
+
+  for (;;) {
+    while (GPSSerial.available()) {
+      bool msg_finished = tiny_gps.encode(GPSSerial.read());
+
+      if (msg_finished && tiny_gps.location.isValid() &&
+          tiny_gps.time.isValid()) {
+        gps_data.lat = tiny_gps.location.lat();
+        gps_data.lng = tiny_gps.location.lng();
+        gps_data.time.hours = tiny_gps.time.hour();
+        gps_data.time.minutes = tiny_gps.time.minute();
+        gps_data.time.seconds = tiny_gps.time.second();
+#ifdef DEBUG
+        print_debug(&gps_data);
+#endif
+      }
     }
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
 }
 
-void print_data([[maybe_unused]] void *pvParameters) {
-    for (;;) {
-        if (!data_is_available()) {
-            Serial.println("GPS: no fix");
-        } else {
-            gps::Data gps_data = get_data();
-            Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n",
-                          gps_data.lat, gps_data.lng, gps_data.time.hours,
-                          gps_data.time.minutes, gps_data.time.seconds);
-        }
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
-} // namespace gps
+}  // namespace gps
