@@ -59,9 +59,8 @@ Data get_data() {
 }
 
 void mpu_task([[maybe_unused]] void *pvParameters) {
-    Position<int16_t> iaccel{}, igyro{};
-    Position<float> faccel{}, fgyro{};
-
+    VectorInt16 iaccel, igyro;
+    VectorFloat faccel, fgyro;
 
     if (!init_success) {
         Serial.println("Mpu is not initialised. Task will now exit.");

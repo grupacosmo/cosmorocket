@@ -1,18 +1,13 @@
 #pragma once
 
+#include "MPU6050.h"
+
 namespace mpu {
 
-template<typename T>
-struct Position {
-    T x{};
-    T y{};
-    T z{};
-};
-
 struct Data {
-    Position<float> max{};
-    Position<float> avg{};
-    Position<float> rot{};
+    VectorFloat max;
+    VectorFloat avg;
+    VectorFloat rot;
 };
 
 void init();
