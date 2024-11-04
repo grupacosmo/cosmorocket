@@ -64,6 +64,7 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
 
 
     if (!init_success) {
+        Serial.println("Mpu is not initialised. Task will now exit.");
         vTaskDelete(nullptr);
     }
 
