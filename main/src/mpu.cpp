@@ -3,12 +3,16 @@
 
 namespace mpu {
 
+namespace {
+
 MPU6050 mpudev;
 
 unsigned int count = 0;
 Data internal{};
 float gyro_res = 0, accel_res = 0;
 bool init_success = false;
+
+};
 
 void init() {
     mpudev.initialize();
@@ -55,39 +59,40 @@ Data get_data() {
 }
 
 void mpu_task([[maybe_unused]] void *pvParameters) {
-    int16_t ax, ay, az, gx, gy, gz;
-    float fax, fay, faz, fgx, fgy, fgz;
+    Position<int16_t> iaccel{}, igyro{};
+    Position<float> faccel{}, fgyro{};
+
 
     if (!init_success) {
         vTaskDelete(nullptr);
     }
 
     for (;;) {
-        mpudev.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+        mpudev.getMotion6(&iaccel.x, &iaccel.y, &iaccel.z, &igyro.x, &igyro.y, &igyro.z);
 
-        fax = abs(ax * accel_res);
-        fay = abs(ay * accel_res);
-        faz = abs(az * accel_res);
-        fgx = abs(gx * gyro_res);
-        fgy = abs(gy * gyro_res);
-        fgz = abs(gz * gyro_res);
+        faccel.x = abs(iaccel.x * accel_res);
+        faccel.y = abs(iaccel.y * accel_res);
+        faccel.z = abs(iaccel.z * accel_res);
+        fgyro.x = abs(igyro.x * gyro_res);
+        fgyro.y = abs(igyro.y * gyro_res);
+        fgyro.z = abs(igyro.z * gyro_res);
 
-        if (internal.max.x < fax) {
-            internal.max.x = fax;
+        if (internal.max.x < faccel.x) {
+            internal.max.x = faccel.x;
         }
-        if (internal.max.y < fay) {
-            internal.max.y = fay;
+        if (internal.max.y < faccel.y) {
+            internal.max.y = faccel.y;
         }
-        if (internal.max.z < faz) {
-            internal.max.z = faz;
+        if (internal.max.z < faccel.z) {
+            internal.max.z = faccel.z;
         }
 
-        internal.avg.x += fax;
-        internal.avg.y += fay;
-        internal.avg.z += faz;
-        internal.rot.x += fgx;
-        internal.rot.y += fgy;
-        internal.rot.z += fgz;
+        internal.avg.x += faccel.x;
+        internal.avg.y += faccel.y;
+        internal.avg.z += faccel.z;
+        internal.rot.x += fgyro.x;
+        internal.rot.y += fgyro.y;
+        internal.rot.z += fgyro.z;
 
         count++;
 

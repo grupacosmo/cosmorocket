@@ -2,16 +2,17 @@
 
 namespace mpu {
 
+template<typename T>
 struct Position {
-    float x{};
-    float y{};
-    float z{};
+    T x{};
+    T y{};
+    T z{};
 };
 
 struct Data {
-    Position max{};
-    Position avg{};
-    Position rot{};
+    Position<float> max{};
+    Position<float> avg{};
+    Position<float> rot{};
 };
 
 void init();
