@@ -1,16 +1,20 @@
 #pragma once
+
+#include "MPU6050.h"
+
 namespace mpu {
 
-struct Position {
-  float x{};
-  float y{};
-  float z{};
-};
-
 struct Data {
-  Position max{};
-  Position avg{};
-  Position rot{};
+    VectorFloat max;
+    VectorFloat avg;
+    VectorFloat rot;
 };
 
-}  // namespace mpu
+void init();
+bool calibrate();
+void mpu_task(void *pvParameters);
+void mpu_print(void *pvParameters);
+void print_data();
+Data get_data();
+
+} // namespace mpu
