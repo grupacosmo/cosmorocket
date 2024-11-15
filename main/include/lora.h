@@ -3,8 +3,8 @@
 
 namespace lora {
 
-void init();
-void lora_log(void* pvParameters);
-bool is_available();
+void init(HardwareSerial& lora_serial);
+void send(HardwareSerial& lora_serial, const String &message);
+bool check_availability(HardwareSerial& lora_serial);
 
 }  // namespace lora

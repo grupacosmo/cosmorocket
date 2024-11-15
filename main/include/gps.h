@@ -1,7 +1,10 @@
 #pragma once
 #include <HardwareSerial.h>
+#include <TinyGPS++.h>
 
 namespace gps {
+
+constexpr uint8_t SERIAL_NUM = 1;
 
 struct Time {
   uint8_t hours{};
@@ -15,7 +18,7 @@ struct Data {
   double lng{};
 };
 
-void init();
-void gps_task(void *pvParameters);
+void init(HardwareSerial& gps_serial);
+bool read(TinyGPSPlus& gps, HardwareSerial& serial, Data& data);
 
 }  // namespace gps
