@@ -4,8 +4,6 @@
 // https://files.seeedstudio.com/products/317990687/res/LoRa-E5+AT+Command+Specification_V1.0+.pdf
 
 namespace lora {
-
-HardwareSerial LoRaWioE5(1);
 // Private
 namespace {
 constexpr uint8_t TX_PIN = 15;
@@ -24,25 +22,21 @@ constexpr char CRC[] = "ON";
 constexpr char IQ[] = "OFF";
 constexpr char NET[] = "OFF";
 
-void send(const String &message) {
-  LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
-}
-
 }  // namespace
 
-bool check_availability() {
-  LoRaWioE5.println("AT");
+bool check_availability(HardwareSerial& lora_serial) {
+  lora_serial.println("AT");
   delay(1000);
-  return LoRaWioE5.find("OK");
+  return lora_serial.find("OK");
 }
 
-void init() {
+void init(HardwareSerial& lora_serial) {
   String atCommand{"AT+MODE=TEST\r\n"};
-  LoRaWioE5.begin(BAUD_RATE, SERIAL_8N1, TX_PIN, RX_PIN);
-  LoRaWioE5.print(atCommand);
+  lora_serial.begin(BAUD_RATE, SERIAL_8N1, TX_PIN, RX_PIN);
+  lora_serial.print(atCommand);
   delay(1000);
 
-  if (!check_availability()) {
+  if (!check_availability(lora_serial)) {
     Serial.println("LoRa module is not available");
     return;
   }
@@ -52,15 +46,13 @@ void init() {
               ", " + BANDWIDTH + ", " + TXPR + ", " + RXPR + ", " + POWER +
               ", " + CRC + ", " + IQ + ", " + NET + "\r\n";
 
-  LoRaWioE5.print(atCommand);
+  lora_serial.print(atCommand);
   delay(1000);
 }
 
-void lora_log([[maybe_unused]] void *pvParameters) {
-  for (;;) {
-    send("");
-    vTaskDelay(pdMS_TO_TICKS(500));
-  }
+
+void send(HardwareSerial& lora_serial, const String &message) {
+  lora_serial.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
 }
 
 }  // namespace lora

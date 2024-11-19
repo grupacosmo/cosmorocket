@@ -11,9 +11,6 @@ namespace {
 constexpr uint16_t BAUD_RATE = 9600;
 constexpr uint8_t RX_PIN = 34;
 constexpr uint8_t TX_PIN = 12;
-constexpr uint8_t SERIAL_NUM = 1;
-
-TinyGPSPlus tiny_gps;
 
 void print_debug(const Data& gps_data) {
   Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n", gps_data.lat,
@@ -22,31 +19,25 @@ void print_debug(const Data& gps_data) {
 }
 }  // namespace
 
-HardwareSerial GPSSerial(SERIAL_NUM);
+void init(HardwareSerial& gps_serial) { gps_serial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN); }
 
-void init() { GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN); }
-
-void gps_task([[maybe_unused]] void* pvParameters) {
-  Data gps_data;
-
-  for (;;) {
-    while (GPSSerial.available()) {
-      bool msg_finished = tiny_gps.encode(GPSSerial.read());
-
-      if (msg_finished && tiny_gps.location.isValid() &&
-          tiny_gps.time.isValid()) {
-        gps_data.lat = tiny_gps.location.lat();
-        gps_data.lng = tiny_gps.location.lng();
-        gps_data.time.hours = tiny_gps.time.hour();
-        gps_data.time.minutes = tiny_gps.time.minute();
-        gps_data.time.seconds = tiny_gps.time.second();
-#ifdef DEBUG
-        print_debug(&gps_data);
-#endif
-      }
-    }
-    vTaskDelay(pdMS_TO_TICKS(100));
+// Reads data from `gps` into `data` if a new message has been received.
+bool read(TinyGPSPlus& gps, HardwareSerial& serial, Data& data) {
+  // read all data from serial and encode it the gps object
+  while (serial.available() > 0) {
+    gps.encode(serial.read());
   }
+
+  if (gps.location.isValid() && gps.time.isValid()) {
+    data.lat = gps.location.lat();
+    data.lng = gps.location.lng();
+    data.time.hours = gps.time.hour();
+    data.time.minutes = gps.time.minute();
+    data.time.seconds = gps.time.second();
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace gps
