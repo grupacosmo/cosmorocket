@@ -8,7 +8,6 @@ namespace {
 MPU6050 mpudev;
 
 unsigned int count = 0;
-Data internal{};
 float gyro_res = 0, accel_res = 0;
 bool init_success = false;
 
@@ -40,27 +39,11 @@ void init() {
     gyro_res = mpudev.get_gyro_resolution() / 2;
 }
 
-Data get_data() {
-    Data dane{};
-    dane.max.x = internal.max.x;
-    dane.max.y = internal.max.y;
-    dane.max.z = internal.max.z;
-    dane.avg.x = internal.avg.x / count,
-    dane.avg.y = internal.avg.y / count,
-    dane.avg.z = internal.avg.z / count,
-    dane.rot.x = internal.rot.x / count,
-    dane.rot.y = internal.rot.y / count,
-    dane.rot.z = internal.rot.z / count,
-
-    count = 0;
-    internal = {};
-
-    return dane;
-}
 
 void mpu_task([[maybe_unused]] void *pvParameters) {
     VectorInt16 iaccel, igyro;
     VectorFloat faccel, fgyro;
+    Data* data_ptr = (Data*) pvParameters;
 
     if (!init_success) {
         Serial.println("Mpu is not initialised. Task will now exit.");
@@ -77,31 +60,28 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
         fgyro.y = abs(igyro.y * gyro_res);
         fgyro.z = abs(igyro.z * gyro_res);
 
-        if (internal.max.x < faccel.x) {
-            internal.max.x = faccel.x;
+        if (data_ptr->max.x < faccel.x) {
+            data_ptr->max.x = faccel.x;
         }
-        if (internal.max.y < faccel.y) {
-            internal.max.y = faccel.y;
+        if (data_ptr->max.y < faccel.y) {
+            data_ptr->max.y = faccel.y;
         }
-        if (internal.max.z < faccel.z) {
-            internal.max.z = faccel.z;
+        if (data_ptr->max.z < faccel.z) {
+            data_ptr->max.z = faccel.z;
         }
 
-        internal.avg.x += faccel.x;
-        internal.avg.y += faccel.y;
-        internal.avg.z += faccel.z;
-        internal.rot.x += fgyro.x;
-        internal.rot.y += fgyro.y;
-        internal.rot.z += fgyro.z;
+        data_ptr->avg.x += faccel.x;
+        data_ptr->avg.y += faccel.y;
+        data_ptr->avg.z += faccel.z;
+        data_ptr->rot.x += fgyro.x;
+        data_ptr->rot.y += fgyro.y;
+        data_ptr->rot.z += fgyro.z;
 
         count++;
-
-        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
-void print_data() {
-    Data data = get_data();
+void print_data(const Data& data) {
     Serial.printf("[Max g force]\n"
                   "[x, y, z]\n"
                   "%f, %f, %f\n"
