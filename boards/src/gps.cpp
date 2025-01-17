@@ -4,6 +4,8 @@
 
 #include "TinyGPS++.h"
 
+#include "display.h"
+
 namespace gps {
 
 // Private
@@ -31,7 +33,14 @@ void gps_task([[maybe_unused]] void* pvParameters) {
 
   for (;;) {
     while (GPSSerial.available()) {
-      bool msg_finished = tiny_gps.encode(GPSSerial.read());
+      Adafruit_SSD1306 *disp = display::display_get();
+      disp->clearDisplay();
+      disp->setTextSize(1);
+      disp->setTextColor(WHITE);
+      disp->setCursor(0, 0);
+      disp->print((char)GPSSerial.read());
+      disp->display();
+      /*bool msg_finished = tiny_gps.encode(GPSSerial.read());
 
       if (msg_finished && tiny_gps.location.isValid() &&
           tiny_gps.time.isValid()) {
@@ -41,11 +50,10 @@ void gps_task([[maybe_unused]] void* pvParameters) {
         gps_data.time.minutes = tiny_gps.time.minute();
         gps_data.time.seconds = tiny_gps.time.second();
 #ifdef DEBUG
-        print_debug(&gps_data);
+        print_debug(gps_data);
 #endif
-      }
+      }*/
     }
-    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 

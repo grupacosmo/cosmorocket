@@ -94,6 +94,10 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
         internal.rot.y += fgyro.y;
         internal.rot.z += fgyro.z;
 
+#ifdef DEBUG
+        if (count % 5 == 0)
+            print_data();
+#endif
         count++;
 
         vTaskDelay(pdMS_TO_TICKS(100));
