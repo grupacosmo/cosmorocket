@@ -1,5 +1,6 @@
 #include "mpu.h"
 #include "MPU6050.h"
+#include "display.h"
 
 namespace mpu {
 

@@ -31,15 +31,25 @@ void init() { GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN); }
 void gps_task([[maybe_unused]] void* pvParameters) {
   Data gps_data;
 
+  Adafruit_SSD1306 *disp = display::display_get();
+
+  //char data[1024];
+
+  disp->clearDisplay();
+  disp->setTextSize(1);
+  disp->setTextColor(WHITE);
+  disp->setCursor(0, 0);
+
   for (;;) {
-    while (GPSSerial.available()) {
-      Adafruit_SSD1306 *disp = display::display_get();
-      disp->clearDisplay();
-      disp->setTextSize(1);
-      disp->setTextColor(WHITE);
-      disp->setCursor(0, 0);
-      disp->print((char)GPSSerial.read());
-      disp->display();
+      if (GPSSerial.available()) {
+        disp->setCursor(0, 0);
+
+        while (GPSSerial.available())
+          disp->print((char)GPSSerial.read());
+        
+        disp->display();
+      }
+
       /*bool msg_finished = tiny_gps.encode(GPSSerial.read());
 
       if (msg_finished && tiny_gps.location.isValid() &&
@@ -53,7 +63,6 @@ void gps_task([[maybe_unused]] void* pvParameters) {
         print_debug(gps_data);
 #endif
       }*/
-    }
   }
 }
 

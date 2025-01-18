@@ -2,6 +2,7 @@
 
 #include <Adafruit_BMP280.h>
 #include <Adafruit_Sensor.h>
+#include "display.h"
 
 namespace bmp {
 
@@ -14,17 +15,25 @@ Adafruit_BMP280 bmp_obj;
 Data data;
 
 void print_debug(const Data &data) {
-  Serial.print("[Temperature] ");
-  Serial.print(data.temperature);
-  Serial.println("°C");
+  Adafruit_SSD1306 *disp = display::display_get();
+  disp->clearDisplay();
+  disp->setTextSize(1);
+  disp->setTextColor(WHITE);
+  disp->setCursor(0, 0);
 
-  Serial.print("[Pressure] ");
-  Serial.print(data.pressure / 100.f);
-  Serial.println("hPa");
+  disp->print("[Temperature] ");
+  disp->print(data.temperature);
+  disp->println("°C");
 
-  Serial.print("[Altitude] ");
-  Serial.print(data.altitude);
-  Serial.println("m");
+  disp->print("[Pressure] ");
+  disp->print(data.pressure / 100.f);
+  disp->println("hPa");
+
+  disp->print("[Altitude] ");
+  disp->print(data.altitude);
+  disp->println("m");
+
+  disp->display();
 }
 }  // namespace
 
