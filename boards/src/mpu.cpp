@@ -12,8 +12,16 @@ unsigned int count = 0;
 Data internal{};
 float gyro_res = 0, accel_res = 0;
 bool init_success = false;
+VectorFloat faccel, fgyro;
 
 };
+
+void print_debug()
+{
+    Adafruit_SSD1306 *disp = display::display_get();
+
+    disp->printf("Acceleration:\n%.4f %.4f %.4f\nGyroscope:\n%.4f %.4f %.4f\n", faccel.x, faccel.y, faccel.z, fgyro.x, fgyro.y, fgyro.z);
+}
 
 void init() {
     mpudev.initialize();
@@ -61,7 +69,6 @@ Data get_data() {
 
 void mpu_task([[maybe_unused]] void *pvParameters) {
     VectorInt16 iaccel, igyro;
-    VectorFloat faccel, fgyro;
 
     if (!init_success) {
         Serial.println("Mpu is not initialised. Task will now exit.");

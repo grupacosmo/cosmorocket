@@ -10,6 +10,7 @@ struct Data {
     VectorFloat rot;
 };
 
+void print_debug();
 void init();
 bool calibrate();
 void mpu_task(void *pvParameters);

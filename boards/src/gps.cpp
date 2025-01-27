@@ -16,41 +16,28 @@ constexpr uint8_t TX_PIN = 12;
 constexpr uint8_t SERIAL_NUM = 1;
 
 TinyGPSPlus tiny_gps;
-
-void print_debug(const Data& gps_data) {
-  Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n", gps_data.lat,
-                gps_data.lng, gps_data.time.hours, gps_data.time.minutes,
-                gps_data.time.seconds);
-}
+Data gps_data;
 }  // namespace
 
 HardwareSerial GPSSerial(SERIAL_NUM);
 
-void init() { GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN); }
+void print_debug() {
+  Adafruit_SSD1306 *disp = display::display_get();
+  disp->printf("%.6f %.6f\nTime: %02d:%02d:%02d", gps_data.lat,
+                gps_data.lng, gps_data.time.hours, gps_data.time.minutes,
+                gps_data.time.seconds);
+  disp->println();
+}
+
+void init() {
+  GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN);
+}
 
 void gps_task([[maybe_unused]] void* pvParameters) {
-  Data gps_data;
-
-  Adafruit_SSD1306 *disp = display::display_get();
-
-  //char data[1024];
-
-  disp->clearDisplay();
-  disp->setTextSize(1);
-  disp->setTextColor(WHITE);
-  disp->setCursor(0, 0);
-
   for (;;) {
-      if (GPSSerial.available()) {
-        disp->setCursor(0, 0);
-
-        while (GPSSerial.available())
-          disp->print((char)GPSSerial.read());
-        
-        disp->display();
-      }
-
-      /*bool msg_finished = tiny_gps.encode(GPSSerial.read());
+    while (!GPSSerial.available()) vTaskDelay(1024);
+    do {
+      bool msg_finished = tiny_gps.encode(GPSSerial.read());
 
       if (msg_finished && tiny_gps.location.isValid() &&
           tiny_gps.time.isValid()) {
@@ -59,11 +46,11 @@ void gps_task([[maybe_unused]] void* pvParameters) {
         gps_data.time.hours = tiny_gps.time.hour();
         gps_data.time.minutes = tiny_gps.time.minute();
         gps_data.time.seconds = tiny_gps.time.second();
-#ifdef DEBUG
+/*#ifdef DEBUG
         print_debug(gps_data);
-#endif
-      }*/
+#endif*/
+      }
+    } while (GPSSerial.available());
   }
 }
-
-}  // namespace gps
+}

@@ -11,6 +11,7 @@ struct Data {
 
 void init();
 void get_bmp(void *pvParameters);
+void print_debug();
 void print_data(void *pvParameters);
 
 }  // namespace bmp

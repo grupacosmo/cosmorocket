@@ -1,4 +1,7 @@
 #include "display.h"
+#include "bmp.h"
+#include "gps.h"
+#include "mpu.h"
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 
@@ -32,13 +35,16 @@ namespace {
   {
     for (;;)
     {
-      /*disp.clearDisplay();
+      disp.clearDisplay();
       disp.setTextSize(1);
       disp.setTextColor(WHITE);
       disp.setCursor(0, 0);
-      disp.print(num++);*/
+      bmp::print_debug();
+      gps::print_debug();
+      mpu::print_debug();
+      disp.display();
 
-      vTaskDelay(pdMS_TO_TICKS(20));
+      vTaskDelay(pdMS_TO_TICKS(100));
     }
   }
 
