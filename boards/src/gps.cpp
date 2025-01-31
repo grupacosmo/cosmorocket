@@ -33,7 +33,7 @@ HardwareSerial GPSSerial(SERIAL_NUM);
 void init() { GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN); }
 
 void gps_task([[maybe_unused]] void* pvParameters) {
-  Data* gps_data = (Data*) pvParameters;
+  Data* gps_data = (Data*)pvParameters;
 
   for (;;) {
     while (GPSSerial.available()) {
@@ -47,9 +47,8 @@ void gps_task([[maybe_unused]] void* pvParameters) {
         gps_data->time.minutes = tiny_gps.time.minute();
         gps_data->time.seconds = tiny_gps.time.second();
 #ifdef DEBUG
-        print_debug(&gps_data);
+        print_debug(*gps_data);
 #endif
-
       }
     }
   }

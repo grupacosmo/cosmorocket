@@ -10,7 +10,7 @@ struct Data {
 };
 
 void init();
-void get_bmp(void *pvParameters);
-void print_data(void *pvParameters);
+void get_bmp(Data* data_ptr);
+void print_data(void* pvParameters);
 
 }  // namespace bmp

@@ -16,7 +16,7 @@ constexpr uint8_t CHIP_ADDR = 0x76;  // ALT 0x77
 Adafruit_BMP280 bmp_obj;
 Data data;
 
-void print_debug(const Data &data) {
+void print_debug(const Data& data) {
   Serial.print("[Temperature] ");
   Serial.print(data.temperature);
   Serial.println("°C");
@@ -37,19 +37,18 @@ void init() {
   if (!success) {
     Serial.println("Viable sensor BMP280 not found, check wiring!");
   }
+  Serial.println("BMP280 sensor is ready.");
 }
 
-void get_bmp(void *pvParameters) {
-  for (;;) {
-    if (bmp_obj.sensorID() != 0) {  // TODO Test should be 0 if not inited
-      data = Data{.temperature = bmp_obj.readTemperature(),
-                  .pressure = bmp_obj.readPressure(),
-                  .altitude = bmp_obj.readAltitude(SEALEVELPRESSURE_HPA)};
+void get_bmp(Data* data_ptr) {
+  if (bmp_obj.sensorID() != 0) {  // TODO Test should be 0 if not inited
+    data = Data{.temperature = bmp_obj.readTemperature(),
+                .pressure = bmp_obj.readPressure(),
+                .altitude = bmp_obj.readAltitude(SEALEVELPRESSURE_HPA)};
+    *data_ptr = data;
 #ifdef DEBUG
-      print_debug(&data);
+    print_debug(data);
 #endif
-    }
-    vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
 
