@@ -5,6 +5,6 @@
 namespace lora {
 
 void init();
-void lora_task(void* pvParameters);
+void lora_log(String str);
 
 }  // namespace lora

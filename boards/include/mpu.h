@@ -9,12 +9,10 @@ struct Data {
     VectorFloat avg;
     VectorFloat rot;
 };
-
+ 
 void init();
 bool calibrate();
 void mpu_task(void *pvParameters);
-void mpu_print(void *pvParameters);
-void print_data();
-Data get_data();
+void print_data(const Data& data);
 
 } // namespace mpu
