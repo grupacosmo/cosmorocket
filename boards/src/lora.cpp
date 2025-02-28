@@ -1,66 +1,51 @@
 #include "lora.h"
-
-// LoRa AT commands documentation
-// https://files.seeedstudio.com/products/317990687/res/LoRa-E5+AT+Command+Specification_V1.0+.pdf
-
 namespace lora {
 
-HardwareSerial LoRaWioE5(1);
-// Private
-namespace {
-constexpr uint8_t TX_PIN = 15;
-constexpr uint8_t RX_PIN = 19;
+Radio radio = new RadioModule();
+int transmissionState = RADIOLIB_ERR_NONE;
+volatile bool transmittedFlag = false;
+int count = 0;
 
-constexpr uint8_t TXPR = 12;
-constexpr uint8_t RXPR = 15;
-
-constexpr uint16_t BAUD_RATE = 9600;
-constexpr uint16_t FREQUENCY = 868;
-constexpr uint8_t BANDWIDTH = 125;
-constexpr uint8_t POWER = 14;
-
-constexpr char SPREADING_FACTOR[] = "SF12";
-constexpr char CRC[] = "ON";
-constexpr char IQ[] = "OFF";
-constexpr char NET[] = "OFF";
-
-void send(const String &message) {
-  LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
-}
-
-}  // namespace
-
-bool check_availability() {
-  LoRaWioE5.println("AT");
-  delay(1000);
-  return LoRaWioE5.find("OK");
-}
+void setFlag(void) { transmittedFlag = true; }
 
 void init() {
-  String atCommand{"AT+MODE=TEST\r\n"};
-  LoRaWioE5.begin(BAUD_RATE, SERIAL_8N1, TX_PIN, RX_PIN);
-  LoRaWioE5.print(atCommand);
-  delay(1000);
+  // freq = 434.0 bw = 125.0 sf = 9 cr = 7 syncWord = RADIOLIB_SX127X_SYNC_WORD
+  // power = 10, uint16_t preambleLength = 8, uint8_t gain = 0);
 
-  if (!check_availability()) {
-    Serial.println("LoRa module is not available");
-    return;
+  Serial.print("[SX1278] Initializing ... ");
+  int state = radio.begin();
+
+  if (state == RADIOLIB_ERR_NONE) {
+    Serial.println("success!");
+
+  } else {
+    Serial.print("failed, code ");
+    Serial.println(state);
   }
+  radio.setPacketSentAction(setFlag);
 
-  // LoRa setup
-  atCommand = String("AT+TEST=RFCFG, ") + FREQUENCY + ", " + SPREADING_FACTOR +
-              ", " + BANDWIDTH + ", " + TXPR + ", " + RXPR + ", " + POWER +
-              ", " + CRC + ", " + IQ + ", " + NET + "\r\n";
+  Serial.print(F("[SX1278] Sending first packet ... "));
 
-  LoRaWioE5.print(atCommand);
-  delay(1000);
+  transmissionState = radio.startTransmit("Hello World!");
 }
-
-void lora_log([[maybe_unused]] void *pvParameters) {
+void lora_task(void* pvParameters) {
   for (;;) {
-    send("");
-    vTaskDelay(pdMS_TO_TICKS(500));
+    if (transmittedFlag) {
+      transmittedFlag = false;
+
+      if (transmissionState == RADIOLIB_ERR_NONE) {
+        Serial.println("transmission finished!");
+
+      } else {
+        Serial.print("failed, code ");
+        Serial.println(transmissionState);
+      }
+      radio.finishTransmit();
+      vTaskDelay(pdMS_TO_TICKS(2));
+      Serial.print("[SX1278] Sending another packet ... ");
+      String str = "Hello World! #" + String(count++);
+      transmissionState = radio.startTransmit(str);
+    }
   }
 }
-
 }  // namespace lora
