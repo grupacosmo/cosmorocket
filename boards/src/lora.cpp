@@ -24,28 +24,24 @@ void init() {
   }
   radio.setPacketSentAction(setFlag);
 
-  Serial.print(F("[SX1278] Sending first packet ... "));
+  Serial.print(F("[SX1278] Sending first packet ... \n"));
 
   transmissionState = radio.startTransmit("Hello World!");
 }
-void lora_task(void* pvParameters) {
-  for (;;) {
-    if (transmittedFlag) {
-      transmittedFlag = false;
+void lora_log(String str) {
+  if (transmittedFlag) {
+    transmittedFlag = false;
 
-      if (transmissionState == RADIOLIB_ERR_NONE) {
-        Serial.println("transmission finished!");
+    if (transmissionState == RADIOLIB_ERR_NONE) {
+      Serial.println("transmission finished!");
 
-      } else {
-        Serial.print("failed, code ");
-        Serial.println(transmissionState);
-      }
-      radio.finishTransmit();
-      vTaskDelay(pdMS_TO_TICKS(2));
-      Serial.print("[SX1278] Sending another packet ... ");
-      String str = "Hello World! #" + String(count++);
-      transmissionState = radio.startTransmit(str);
+    } else {
+      Serial.print("failed, code ");
+      Serial.println(transmissionState);
     }
+    radio.finishTransmit();
+    Serial.print("[SX1278] Sending another packet ... ");
+    transmissionState = radio.startTransmit(str);
   }
 }
 }  // namespace lora

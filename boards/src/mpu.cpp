@@ -52,7 +52,6 @@ void mpu_task([[maybe_unused]] void* pvParameters) {
   }
   // Serial.println("MPU6050 task started");
   for (;;) {
-    Serial.println("MPU6050 task");
     mpudev.getMotion6(&iaccel.x, &iaccel.y, &iaccel.z, &igyro.x, &igyro.y,
                       &igyro.z);
 
