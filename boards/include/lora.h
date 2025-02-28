@@ -1,10 +1,10 @@
 #pragma once
-#include <HardwareSerial.h>
-
+#include <RadioLib.h>
+#define RADIO_BOARD_TTGO_LORA32_V1_V21
+#include <RadioBoards.h>
 namespace lora {
 
 void init();
-void lora_log(void* pvParameters);
-bool is_available();
+void lora_task(void* pvParameters);
 
 }  // namespace lora

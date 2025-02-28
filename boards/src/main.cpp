@@ -23,7 +23,7 @@ void setup() {
   xTaskCreate(led::blink_task, "blink", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
   xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
   xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-  xTaskCreate(lora::lora_log, "lora", DEFAULT_TASK_SIZE, NULL, 1, NULL);
+  xTaskCreate(lora::lora_task, "lora", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
   xTaskCreate(mpu::mpu_task, "mpu", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
 
   memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
