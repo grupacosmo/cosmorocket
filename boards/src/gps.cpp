@@ -14,12 +14,6 @@ constexpr uint8_t TX_PIN = 12;
 constexpr uint8_t SERIAL_NUM = 1;
 
 TinyGPSPlus tiny_gps;
-
-void print_debug(const Data& gps_data) {
-  Serial.printf("Lat: %.6f Long: %.6f Time: %02d:%02d:%02d\n", gps_data.lat,
-                gps_data.lng, gps_data.time.hours, gps_data.time.minutes,
-                gps_data.time.seconds);
-}
 }  // namespace
 
 HardwareSerial GPSSerial(SERIAL_NUM);
