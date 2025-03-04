@@ -1,5 +1,5 @@
 #include "mpu.h"
-#include "MPU6050.h"
+#include "MPU6050_6Axis_MotionApps20.h"
 
 namespace mpu {
 
@@ -12,10 +12,26 @@ Data internal{};
 float gyro_res = 0, accel_res = 0;
 bool init_success = false;
 
+uint16_t packetSize;
+uint8_t FIFOBuffer[42];
+Quaternion q;
+VectorFloat gravity;
+float ypr[3];
+
 };
 
 void init() {
     mpudev.initialize();
+
+    if (!mpudev.testConnection()) {
+        Serial.println("Connection to mpu failed");
+        return;
+    }
+
+    if (mpudev.dmpInitialize()) {
+        Serial.print("mpu: DMP Initialization failed");
+        return;
+    }
 
     // Calibration on start?
     // mpudev.CalibrateAccel(10);
@@ -30,14 +46,14 @@ void init() {
     // mpudev.setYGyroOffset(0);
     // mpudev.setZGyroOffset(0);
 
-    if (!mpudev.testConnection()) {
-        Serial.println("Connection to mpu failed");
-        return;
-    }
-
-    init_success = true;
+    mpudev.CalibrateAccel(6);
+    mpudev.CalibrateGyro(6);
+    mpudev.setDMPEnabled(true);
+    packetSize = mpudev.dmpGetFIFOPacketSize();
     accel_res = mpudev.get_acce_resolution() / 2;
     gyro_res = mpudev.get_gyro_resolution() / 2;
+
+    init_success = true;
 }
 
 Data get_data() {
@@ -48,9 +64,9 @@ Data get_data() {
     dane.avg.x = internal.avg.x / count,
     dane.avg.y = internal.avg.y / count,
     dane.avg.z = internal.avg.z / count,
-    dane.rot.x = internal.rot.x / count,
-    dane.rot.y = internal.rot.y / count,
-    dane.rot.z = internal.rot.z / count,
+    dane.rot.x = internal.rot.x / count * 180 / M_PI; //in degrees
+    dane.rot.y = internal.rot.y / count * 180 / M_PI;
+    dane.rot.z = internal.rot.z / count * 180 / M_PI;
 
     count = 0;
     internal = {};
@@ -60,7 +76,7 @@ Data get_data() {
 
 void mpu_task([[maybe_unused]] void *pvParameters) {
     VectorInt16 iaccel, igyro;
-    VectorFloat faccel, fgyro;
+    VectorFloat faccel;
 
     if (!init_success) {
         Serial.println("Mpu is not initialised. Task will now exit.");
@@ -68,33 +84,39 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
     }
 
     for (;;) {
-        mpudev.getMotion6(&iaccel.x, &iaccel.y, &iaccel.z, &igyro.x, &igyro.y, &igyro.z);
+        if (mpudev.dmpGetCurrentFIFOPacket(FIFOBuffer)) {
+            mpudev.dmpGetQuaternion(&q, FIFOBuffer);
+            mpudev.dmpGetGravity(&gravity, &q);
+            mpudev.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-        faccel.x = abs(iaccel.x * accel_res);
-        faccel.y = abs(iaccel.y * accel_res);
-        faccel.z = abs(iaccel.z * accel_res);
-        fgyro.x = abs(igyro.x * gyro_res);
-        fgyro.y = abs(igyro.y * gyro_res);
-        fgyro.z = abs(igyro.z * gyro_res);
+            mpudev.getMotion6(&iaccel.x, &iaccel.y, &iaccel.z, &igyro.x, &igyro.y, &igyro.z);
 
-        if (internal.max.x < faccel.x) {
-            internal.max.x = faccel.x;
+            faccel.x = abs(iaccel.x * accel_res);
+            faccel.y = abs(iaccel.y * accel_res);
+            faccel.z = abs(iaccel.z * accel_res);
+
+            if (internal.max.x < faccel.x) {
+                internal.max.x = faccel.x;
+            }
+            if (internal.max.y < faccel.y) {
+                internal.max.y = faccel.y;
+            }
+            if (internal.max.z < faccel.z) {
+                internal.max.z = faccel.z;
+            }
+
+            internal.avg.x += faccel.x;
+            internal.avg.y += faccel.y;
+            internal.avg.z += faccel.z;
+            internal.rot.x += ypr[0];
+            internal.rot.y += ypr[1];
+            internal.rot.z += ypr[2];
+
+            count++;
+#ifdef DEBUG
+            print_debug(&data);
+#endif
         }
-        if (internal.max.y < faccel.y) {
-            internal.max.y = faccel.y;
-        }
-        if (internal.max.z < faccel.z) {
-            internal.max.z = faccel.z;
-        }
-
-        internal.avg.x += faccel.x;
-        internal.avg.y += faccel.y;
-        internal.avg.z += faccel.z;
-        internal.rot.x += fgyro.x;
-        internal.rot.y += fgyro.y;
-        internal.rot.z += fgyro.z;
-
-        count++;
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }
