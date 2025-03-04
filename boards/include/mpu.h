@@ -1,13 +1,14 @@
 #pragma once
 
-#include "MPU6050.h"
+#include <math.h>
+#include "helper_3dmath.h"
 
 namespace mpu {
 
 struct Data {
     VectorFloat max;
     VectorFloat avg;
-    VectorFloat rot;
+    VectorFloat rot; //in degrees
 };
 
 void print_debug();
