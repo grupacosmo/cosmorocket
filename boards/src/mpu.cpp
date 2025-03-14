@@ -9,9 +9,10 @@ MPU6050 mpudev;
 
 unsigned int count = 0;
 Data internal{};
-float gyro_res = 0, accel_res = 0;
 uint16_t packetSize;
 bool init_success = false;
+
+constexpr uint8_t MPU_CALIBRATION_ITER_CNT = 6;
 
 };
 
@@ -28,12 +29,10 @@ void init() {
         return;
     }
 
-    mpudev.CalibrateAccel(6);
-    mpudev.CalibrateGyro(6);
+    mpudev.CalibrateAccel(MPU_CALIBRATION_ITER_CNT);
+    mpudev.CalibrateGyro(MPU_CALIBRATION_ITER_CNT);
     mpudev.setDMPEnabled(true);
     packetSize = mpudev.dmpGetFIFOPacketSize();
-    accel_res = mpudev.get_acce_resolution() / 2;
-    gyro_res = mpudev.get_gyro_resolution() / 2;
 
     init_success = true;
 }
