@@ -40,6 +40,9 @@ void init() {
 
 Data get_data() {
     Data dane{};
+    if (count == 0)
+        return dane;
+
     dane.acc_max.x = internal.acc_max.x;
     dane.acc_max.y = internal.acc_max.y;
     dane.acc_max.z = internal.acc_max.z;
