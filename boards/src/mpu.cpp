@@ -10,13 +10,8 @@ MPU6050 mpudev;
 unsigned int count = 0;
 Data internal{};
 float gyro_res = 0, accel_res = 0;
-bool init_success = false;
-
 uint16_t packetSize;
-uint8_t FIFOBuffer[42];
-Quaternion q;
-VectorFloat gravity;
-float ypr[3];
+bool init_success = false;
 
 };
 
@@ -33,19 +28,6 @@ void init() {
         return;
     }
 
-    // Calibration on start?
-    // mpudev.CalibrateAccel(10);
-    // mpudev.CalibrateGyro(10);
-
-    // Alternatively, we can set offsets obtained by running IMU_Zero
-    // example from the library.
-    // mpudev.setXAccelOffset(0);
-    // mpudev.setYAccelOffset(0);
-    // mpudev.setZAccelOffset(0);
-    // mpudev.setXGyroOffset(0);
-    // mpudev.setYGyroOffset(0);
-    // mpudev.setZGyroOffset(0);
-
     mpudev.CalibrateAccel(6);
     mpudev.CalibrateGyro(6);
     mpudev.setDMPEnabled(true);
@@ -58,15 +40,16 @@ void init() {
 
 Data get_data() {
     Data dane{};
-    dane.max.x = internal.max.x;
-    dane.max.y = internal.max.y;
-    dane.max.z = internal.max.z;
-    dane.avg.x = internal.avg.x / count,
-    dane.avg.y = internal.avg.y / count,
-    dane.avg.z = internal.avg.z / count,
-    dane.rot.x = internal.rot.x / count * 180 / M_PI; //in degrees
-    dane.rot.y = internal.rot.y / count * 180 / M_PI;
-    dane.rot.z = internal.rot.z / count * 180 / M_PI;
+    dane.acc_max.x = internal.acc_max.x;
+    dane.acc_max.y = internal.acc_max.y;
+    dane.acc_max.z = internal.acc_max.z;
+    dane.acc_avg.x = internal.acc_avg.x / count,
+    dane.acc_avg.y = internal.acc_avg.y / count,
+    dane.acc_avg.z = internal.acc_avg.z / count,
+    dane.rot_avg.x = internal.rot_avg.x / count;
+    dane.rot_avg.y = internal.rot_avg.y / count;
+    dane.rot_avg.z = internal.rot_avg.z / count;
+    dane.rot_avg.w = internal.rot_avg.w / count;
 
     count = 0;
     internal = {};
@@ -76,7 +59,6 @@ Data get_data() {
 
 void mpu_task([[maybe_unused]] void *pvParameters) {
     VectorInt16 iaccel, igyro;
-    VectorFloat faccel;
 
     if (!init_success) {
         Serial.println("Mpu is not initialised. Task will now exit.");
@@ -84,38 +66,34 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
     }
 
     for (;;) {
+        uint8_t FIFOBuffer[42];
+        Quaternion q;
+
         if (mpudev.dmpGetCurrentFIFOPacket(FIFOBuffer)) {
             mpudev.dmpGetQuaternion(&q, FIFOBuffer);
-            mpudev.dmpGetGravity(&gravity, &q);
-            mpudev.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
             mpudev.getMotion6(&iaccel.x, &iaccel.y, &iaccel.z, &igyro.x, &igyro.y, &igyro.z);
 
-            faccel.x = abs(iaccel.x * accel_res);
-            faccel.y = abs(iaccel.y * accel_res);
-            faccel.z = abs(iaccel.z * accel_res);
-
-            if (internal.max.x < faccel.x) {
-                internal.max.x = faccel.x;
+            if (internal.acc_max.x < iaccel.x) {
+                internal.acc_max.x = iaccel.x;
             }
-            if (internal.max.y < faccel.y) {
-                internal.max.y = faccel.y;
+            if (internal.acc_max.y < iaccel.y) {
+                internal.acc_max.y = iaccel.y;
             }
-            if (internal.max.z < faccel.z) {
-                internal.max.z = faccel.z;
+            if (internal.acc_max.z < iaccel.z) {
+                internal.acc_max.z = iaccel.z;
             }
 
-            internal.avg.x += faccel.x;
-            internal.avg.y += faccel.y;
-            internal.avg.z += faccel.z;
-            internal.rot.x += ypr[0];
-            internal.rot.y += ypr[1];
-            internal.rot.z += ypr[2];
+            internal.acc_avg.x += iaccel.x;
+            internal.acc_avg.y += iaccel.y;
+            internal.acc_avg.z += iaccel.z;
+
+            internal.rot_avg.x += q.x;
+            internal.rot_avg.y += q.y;
+            internal.rot_avg.z += q.z;
+            internal.rot_avg.w += q.w;
 
             count++;
-#ifdef DEBUG
-            print_debug(&data);
-#endif
         }
 
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -126,16 +104,16 @@ void print_data() {
     Data data = get_data();
     Serial.printf("[Max g force]\n"
                   "[x, y, z]\n"
-                  "%f, %f, %f\n"
+                  "%d, %d, %d\n"
                   "[Average g force]\n"
                   "[x, y, z]\n"
-                  "%f, %f, %f\n"
+                  "%d, %d, %d\n"
                   "[Average rotation]\n"
-                  "[x, y, z]\n"
-                  "%f, %f, %f\n",
-                  data.max.x, data.max.y, data.max.z,
-                  data.avg.x, data.avg.y, data.avg.z,
-                  data.rot.x, data.rot.y, data.rot.z);
+                  "[x, y, z, w]\n"
+                  "%f, %f, %f, %f\n",
+                  data.acc_max.x, data.acc_max.y, data.acc_max.z,
+                  data.acc_avg.x, data.acc_avg.y, data.acc_avg.z,
+                  data.rot_avg.x, data.rot_avg.y, data.rot_avg.z, data.rot_avg.w);
 }
 
 } // namespace mpu
