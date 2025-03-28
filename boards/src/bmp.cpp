@@ -10,7 +10,8 @@ namespace {
 // 1019.91 is avg Pressure in Cracow
 constexpr float SEALEVELPRESSURE_HPA = 1019.91;
 
-constexpr uint8_t CHIP_BME = 0x60;   // ALT 0x58
+constexpr uint8_t CHIP_BME = 0x58;
+//constexpr uint8_t CHIP_BME = 0x60;   // ALT 0x58
 constexpr uint8_t CHIP_ADDR = 0x76;  // ALT 0x77
 
 Adafruit_BMP280 bmp_obj;
@@ -51,6 +52,10 @@ void get_bmp(void *pvParameters) {
     }
     vTaskDelay(pdMS_TO_TICKS(500));
   }
+}
+
+Data get_data() {
+  return data;
 }
 
 }  // namespace bmp
