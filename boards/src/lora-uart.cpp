@@ -61,11 +61,15 @@ int iter;
 
 void lora_log([[maybe_unused]] void *pvParameters) {
   for (;;) {
-    //logger::Packet packet;
-    //packet.bmp_data = bmp::
+    logger::Packet packet;
+    packet.bmp_data = bmp::get_data();
+    packet.mpu_data = mpu::get_data();
+
     char str[32];
     sprintf(str, "%d", ++iter);
     send(str);
+    send(logger::serialize(packet));
+    
     Serial.println("Sending..");
     vTaskDelay(pdMS_TO_TICKS(2000));
   }
