@@ -57,7 +57,7 @@ void get_bmp(void *pvParameters) {
     if (fabs(temperature - DEFAULT_BMP_TEMPERATURE) < 0.001
           && fabs(pressure - DEFAULT_BMP_PRESSURE) < 0.001) {
       Serial.println("Reinitialising BMP");
-      bmp_obj.begin(CHIP_ADDR, CHIP_BME);
+      init();
       
       continue;
     }
