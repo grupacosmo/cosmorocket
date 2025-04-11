@@ -45,8 +45,10 @@ void get_bmp(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(500));
     float temperature = bmp_obj.readTemperature();
     float pressure = bmp_obj.readPressure();
-    if (pressure < 0) // if garbage data
+    if (pressure < 0) { // if garbage data
+      data = Data{};
       continue;
+    }
     
     // default values -> no measurement taken -> posible recent power loss -> the sensor is not initialized. We need to reinitialize it
     if (fabs(temperature - 24.1500) < 0.001

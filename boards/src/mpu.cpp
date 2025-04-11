@@ -97,6 +97,8 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
 
         // If MPU power is lost, the sensor resets and deinitializes. We need to reinitialize it
         if (!mpudev.getDMPEnabled()) {
+            count = 0; // clear data
+
             Serial.println("Reinitialising MPU");
             mpudev.initialize();
 
