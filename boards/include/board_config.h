@@ -24,4 +24,4 @@ constexpr uint8_t SCL_PIN = 15;
 #endif
 
 constexpr unsigned long BAUD_RATE = 115200;
-constexpr uint32_t DEFAULT_TASK_SIZE = 10000;
+constexpr uint32_t SIZE = 10000;
