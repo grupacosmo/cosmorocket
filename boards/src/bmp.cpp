@@ -10,6 +10,9 @@ namespace {
 // 1019.91 is avg Pressure in Cracow
 constexpr float SEALEVELPRESSURE_HPA = 1019.91;
 
+constexpr float DEFAULT_BMP_TEMPERATURE = 24.1500;
+constexpr float DEFAULT_BMP_PRESSURE = 74296.8906;
+
 constexpr uint8_t CHIP_BME = 0x58;
 //constexpr uint8_t CHIP_BME = 0x60;   // ALT 0x58
 constexpr uint8_t CHIP_ADDR = 0x76;  // ALT 0x77
@@ -51,8 +54,8 @@ void get_bmp(void *pvParameters) {
     }
     
     // default values -> no measurement taken -> posible recent power loss -> the sensor is not initialized. We need to reinitialize it
-    if (fabs(temperature - 24.1500) < 0.001
-          && fabs(pressure - 74296.8906) < 0.001) {
+    if (fabs(temperature - DEFAULT_BMP_TEMPERATURE) < 0.001
+          && fabs(pressure - DEFAULT_BMP_PRESSURE) < 0.001) {
       Serial.println("Reinitialising BMP");
       bmp_obj.begin(CHIP_ADDR, CHIP_BME);
       
