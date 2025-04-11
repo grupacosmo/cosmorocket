@@ -93,6 +93,27 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
     }
 
     for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        // If MPU power is lost, the sensor resets and deinitializes. We need to reinitialize it
+        if (!mpudev.getDMPEnabled()) {
+            count = 0; // clear data
+
+            Serial.println("Reinitialising MPU");
+            mpudev.initialize();
+
+            if (!mpudev.testConnection()) {
+                Serial.println("Connection to mpu failed");
+                continue;
+            }
+
+            if (mpudev.dmpInitialize()) {
+                Serial.println("mpu: DMP Initialization failed");
+                continue;
+            }
+            mpudev.setDMPEnabled(true);
+        }
+
         if (mpudev.dmpGetCurrentFIFOPacket(FIFOBuffer)) {
             mpudev.dmpGetQuaternion(&q, FIFOBuffer);
 
@@ -108,8 +129,6 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
 
             count++;
         }
-
-        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
