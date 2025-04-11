@@ -9,13 +9,8 @@ namespace bmp {
 namespace {
 // 1019.91 is avg Pressure in Cracow
 constexpr float SEALEVELPRESSURE_HPA = 1019.91;
-
 constexpr float DEFAULT_BMP_TEMPERATURE = 24.1500;
 constexpr float DEFAULT_BMP_PRESSURE = 74296.8906;
-
-constexpr uint8_t CHIP_BME = 0x58;
-//constexpr uint8_t CHIP_BME = 0x60;   // ALT 0x58
-constexpr uint8_t CHIP_ADDR = 0x76;  // ALT 0x77
 
 Adafruit_BMP280 bmp_obj;
 Data data;
@@ -36,10 +31,16 @@ void print_debug(const Data &data) {
 }  // namespace
 
 void init() {
-  bool success = bmp_obj.begin(CHIP_ADDR, CHIP_BME);
+  bool success =
+      bmp_obj.begin(0x76, 0x60) ||  // Primary address, primary chip ID
+      bmp_obj.begin(0x76, 0x58) ||  // Primary address, alternative chip ID
+      bmp_obj.begin(0x77, 0x60) ||  // Alternative address, primary chip ID
+      bmp_obj.begin(0x77, 0x58);    // Alternative address, alternative chip ID
 
   if (!success) {
-    Serial.println("Viable sensor BMP280 not found, check wiring!");
+    Serial.println("Viable sensor BMP280/BME280 not found, check wiring!");
+  } else {
+    Serial.println("BMP280/BME280 sensor initialized successfully.");
   }
 }
 
@@ -65,13 +66,11 @@ void get_bmp(void *pvParameters) {
                 .pressure = pressure,
                 .altitude = bmp_obj.readAltitude(SEALEVELPRESSURE_HPA)};
 #ifdef DEBUG
-      print_debug(&data);
+      print_debug(data);
 #endif
   }
 }
 
-Data get_data() {
-  return data;
-}
+Data get_data() { return data; }
 
 }  // namespace bmp
