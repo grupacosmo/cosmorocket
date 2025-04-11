@@ -36,6 +36,11 @@ void init() {
       bmp_obj.begin(0x76, 0x58) ||  // Primary address, alternative chip ID
       bmp_obj.begin(0x77, 0x60) ||  // Alternative address, primary chip ID
       bmp_obj.begin(0x77, 0x58);    // Alternative address, alternative chip ID
+  bool success =
+      bmp_obj.begin(0x76, 0x60) ||  // Primary address, primary chip ID
+      bmp_obj.begin(0x76, 0x58) ||  // Primary address, alternative chip ID
+      bmp_obj.begin(0x77, 0x60) ||  // Alternative address, primary chip ID
+      bmp_obj.begin(0x77, 0x58);    // Alternative address, alternative chip ID
 
   if (!success) {
     Serial.println("Viable sensor BMP280/BME280 not found, check wiring!");
@@ -49,24 +54,25 @@ void get_bmp(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(500));
     float temperature = bmp_obj.readTemperature();
     float pressure = bmp_obj.readPressure();
-    if (pressure < 0) { // if garbage data
+    if (pressure < 0) {  // if garbage data
       data = Data{};
       continue;
     }
-    
-    // default values -> no measurement taken -> posible recent power loss -> the sensor is not initialized. We need to reinitialize it
-    if (fabs(temperature - DEFAULT_BMP_TEMPERATURE) < 0.001
-          && fabs(pressure - DEFAULT_BMP_PRESSURE) < 0.001) {
+
+    // default values -> no measurement taken -> posible recent power loss ->
+    // the sensor is not initialized. We need to reinitialize it
+    if (fabs(temperature - DEFAULT_BMP_TEMPERATURE) < 0.001 &&
+        fabs(pressure - DEFAULT_BMP_PRESSURE) < 0.001) {
       Serial.println("Reinitialising BMP");
       init();
-      
+
       continue;
     }
     data = Data{.temperature = temperature,
                 .pressure = pressure,
                 .altitude = bmp_obj.readAltitude(SEALEVELPRESSURE_HPA)};
 #ifdef DEBUG
-      print_debug(data);
+    print_debug(data);
 #endif
   }
 }
