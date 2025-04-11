@@ -53,6 +53,7 @@ void get_bmp(void *pvParameters) {
     // default values -> no measurement taken -> posible recent power loss -> the sensor is not initialized. We need to reinitialize it
     if (fabs(temperature - 24.1500) < 0.001
           && fabs(pressure - 74296.8906) < 0.001) {
+      Serial.println("Reinitialising BMP");
       bmp_obj.begin(CHIP_ADDR, CHIP_BME);
       
       continue;

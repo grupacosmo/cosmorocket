@@ -108,7 +108,7 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
             }
 
             if (mpudev.dmpInitialize()) {
-                Serial.print("mpu: DMP Initialization failed");
+                Serial.println("mpu: DMP Initialization failed");
                 continue;
             }
             mpudev.setDMPEnabled(true);
