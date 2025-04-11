@@ -1,10 +1,11 @@
 #pragma once
 #include <HardwareSerial.h>
 
-namespace lora_uart {
+#include "logger.h"
+namespace lora {
 
 void init();
-void lora_log(void* pvParameters);
+void lora_log(String &message);
 bool is_available();
 
 }  // namespace lora

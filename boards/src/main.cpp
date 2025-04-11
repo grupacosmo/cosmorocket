@@ -5,10 +5,28 @@
 #include "board_config.h"
 #include "gps.h"
 #include "led.h"
-#include "lora.h"
-#include "lora-uart.h"
 #include "memory.h"
 #include "mpu.h"
+
+#ifdef TBEAM
+#include "lora.h"
+#else
+#include "lora-uart.h"
+#endif
+
+// sperate task pinned to core 1
+void main_task(void *pvParameters) {
+  logger::Packet packet;
+  for (;;) {
+    // logic here
+    packet.bmp_data = bmp::get_data();
+    packet.mpu_data = mpu::get_data();
+    packet.gps_data = gps::get_data();
+    String message = logger::serialize(packet);
+    lora::lora_log(message);
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
 
 void setup() {
   Wire.begin(SDA_PIN, SCL_PIN);
@@ -18,28 +36,15 @@ void setup() {
   memory::init();
   gps::init();
   bmp::init();
-#ifdef TBEAM
-  lora::init();
-#else
-  lora_uart::init();
-#endif
   mpu::init();
+  lora::init();
+  // Pin mpu_task to core 0
+  xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", SIZE, nullptr, 1, nullptr, 0);
+  xTaskCreatePinnedToCore(gps::gps_task, "gps", SIZE, nullptr, 1, nullptr, 0);
+  // Pin main_task to core 1
+  xTaskCreatePinnedToCore(main_task, "main", SIZE, nullptr, 1, nullptr, 1);
 
-  xTaskCreate(led::blink_task, "blink", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-  xTaskCreate(gps::gps_task, "gps", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-  xTaskCreate(bmp::get_bmp, "bmp", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-#ifdef TBEAM
-  xTaskCreate(lora::lora_task, "lora", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-#else
-  xTaskCreate(lora_uart::lora_log, "lora", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-#endif
-  xTaskCreate(mpu::mpu_task, "mpu", DEFAULT_TASK_SIZE, nullptr, 1, nullptr);
-
-  memory::config = memory::Config{222, 456.78, "Hello, EEPROM2!"};
-  memory::save_config();
-#ifdef DEBUG
-  memory::print_debug();
-#endif
+  Serial.println("--- SETUP FINISHED. ---");
 }
 
 void loop() {}

@@ -1,3 +1,4 @@
+#ifdef TBEAM
 #include "lora.h"
 namespace lora {
 
@@ -27,25 +28,34 @@ void init() {
   Serial.print(F("[SX1278] Sending first packet ... "));
 
   transmissionState = radio.startTransmit("Hello World!");
+  Serial.println("Lora initialized succesfully.");
+  while (!transmittedFlag) {
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }
-void lora_task(void* pvParameters) {
-  for (;;) {
-    if (transmittedFlag) {
-      transmittedFlag = false;
 
-      if (transmissionState == RADIOLIB_ERR_NONE) {
-        Serial.println("transmission finished!");
+void lora_log(String &message) {
+  if (transmittedFlag) {
+    transmittedFlag = false;
 
-      } else {
-        Serial.print("failed, code ");
-        Serial.println(transmissionState);
-      }
-      radio.finishTransmit();
-      vTaskDelay(pdMS_TO_TICKS(2));
-      Serial.print("[SX1278] Sending another packet ... ");
-      String str = "Hello World! #" + String(count++);
-      transmissionState = radio.startTransmit(str);
+    if (transmissionState != RADIOLIB_ERR_NONE) {
+      Serial.print("failed, code ");
+      Serial.println(transmissionState);
     }
+    radio.finishTransmit();
+    vTaskDelay(pdMS_TO_TICKS(2));
+    transmissionState = radio.startTransmit(message);
+#ifdef DEBUG
+    Serial.println("[LORA] ----------------------- ");
+    Serial.println(message);
+#endif
+  } else {
+    Serial.print("STH WENT REALLY FUCKING WRONG");
+  }
+  while (!transmittedFlag) {
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 }  // namespace lora
+
+#endif  // TBEAM

@@ -16,6 +16,8 @@ struct Data {
 };
 
 void init();
+Data get_data();
 void gps_task(void *pvParameters);
+void print_data();
 
 }  // namespace gps

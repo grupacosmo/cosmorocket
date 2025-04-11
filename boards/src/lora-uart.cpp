@@ -1,10 +1,12 @@
+#ifndef TBEAM
 #include "lora-uart.h"
+
 #include "logger.h"
 
 // LoRa AT commands documentation
 // https://files.seeedstudio.com/products/317990687/res/LoRa-E5+AT+Command+Specification_V1.0+.pdf
 
-namespace lora_uart {
+namespace lora {
 
 HardwareSerial LoRaWioE5(1);
 // Private
@@ -24,10 +26,6 @@ constexpr char SPREADING_FACTOR[] = "SF12";
 constexpr char CRC[] = "ON";
 constexpr char IQ[] = "OFF";
 constexpr char NET[] = "OFF";
-
-void send(const String &message) {
-  LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
-}
 
 }  // namespace
 
@@ -57,22 +55,10 @@ void init() {
   delay(1000);
 }
 
-int iter;
-
-void lora_log([[maybe_unused]] void *pvParameters) {
-  for (;;) {
-    logger::Packet packet;
-    packet.bmp_data = bmp::get_data();
-    packet.mpu_data = mpu::get_data();
-
-    char str[32];
-    sprintf(str, "%d", ++iter);
-    send(str);
-    send(logger::serialize(packet));
-    
-    Serial.println("Sending..");
-    vTaskDelay(pdMS_TO_TICKS(2000));
-  }
+void lora_log(String &message) {
+  LoRaWioE5.print("AT+TEST=TXLRSTR,\"" + message + "\"\r\n");
 }
 
 }  // namespace lora
+
+#endif  // TBEAM
