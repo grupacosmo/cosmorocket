@@ -1,8 +1,6 @@
 #ifndef TBEAM
 #include "lora-uart.h"
 
-#include "logger.h"
-
 // LoRa AT commands documentation
 // https://files.seeedstudio.com/products/317990687/res/LoRa-E5+AT+Command+Specification_V1.0+.pdf
 
