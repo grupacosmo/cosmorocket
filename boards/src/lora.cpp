@@ -28,7 +28,7 @@ void init() {
   Serial.print(F("[SX1278] Sending first packet ... "));
 
   transmissionState = radio.startTransmit("Hello World!");
-  Serial.println("Lora initialized succesfully.");
+  Serial.println("Lora initialized successfully.");
   while (!transmittedFlag) {
     vTaskDelay(pdMS_TO_TICKS(10));
   }
