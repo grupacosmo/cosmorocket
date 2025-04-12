@@ -5,12 +5,11 @@ A small bare-metal software project for an on-board computer of a low altitue ro
 ## Description
 
 Project includes:
+- async multithread task ahndling
 - bme sensor handling
 - mpu sensor handling
-- SD card logging
 - Persistent flash configuration
-- Wifi debug and setup
 - LoRa peer to peer communcation with base station
-- control systems for rocket ignition and parachute deploymenmt
+- control systems for rocket paylaod and double parachute deployment
 
 This repo also contains a webserver and client that is used for live visualization of data and camera feed.
