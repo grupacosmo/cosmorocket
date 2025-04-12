@@ -25,7 +25,7 @@ void init() {
 }
 
 void print_data() {
-  Serial.print("[GPS]: ");
+  Serial.println("[GPS]--------------------------------");
   Serial.print(gps_data.lat, 6);
   Serial.print(", ");
   Serial.print(gps_data.lng, 6);

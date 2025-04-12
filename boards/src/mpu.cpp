@@ -139,16 +139,16 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
 
 void print_data(Data &data) {
   Serial.printf(
-      "[MPU6050]: \n"
-      "---------[Max g force] "
+      "[MPU6050] Debug data -------------------\n"
+      "[Max g force] "
       "%d, %d, %d\n"
-      "---------[Average g force] "
+      "[Average g force] "
       "%d, %d, %d\n"
-      "---------[Max gyroscope] "
+      "[Max gyroscope] "
       "%d, %d, %d\n"
-      "---------[Average gyroscope] "
+      "[Average gyroscope] "
       "%d, %d, %d\n"
-      "---------[Average rotation] "
+      "[Average rotation] "
       "%f, %f, %f, %f\n",
       data.acc_max.x, data.acc_max.y, data.acc_max.z, data.acc_avg.x,
       data.acc_avg.y, data.acc_avg.z, data.gyro_max.x, data.gyro_max.y,
