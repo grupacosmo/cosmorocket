@@ -1,3 +1,4 @@
+#ifndef TBEAM
 #include "lora-uart.h"
 
 // LoRa AT commands documentation
