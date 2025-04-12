@@ -15,16 +15,16 @@ constexpr float DEFAULT_BMP_PRESSURE = 74296.8906;
 Adafruit_BMP280 bmp_obj;
 
 void print_debug(const Data &data) {
-  Serial.println("[BMP280]-------- -------------------");
-  Serial.print("[Temperature] ");
+  Serial.println("[BMP280]:");
+  Serial.print("---------[Temperature] ");
   Serial.print(data.temperature);
   Serial.println("°C");
 
-  Serial.print("[Pressure] ");
+  Serial.print("---------[Pressure] ");
   Serial.print(data.pressure / 100.f);
   Serial.println("hPa");
 
-  Serial.print("[Altitude] ");
+  Serial.print("---------[Altitude] ");
   Serial.print(data.altitude);
   Serial.println("m");
 }

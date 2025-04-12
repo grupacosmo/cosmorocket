@@ -46,7 +46,7 @@ void lora_log(String &message) {
     vTaskDelay(pdMS_TO_TICKS(2));
     transmissionState = radio.startTransmit(message);
 #ifdef DEBUG
-    Serial.println("[LORA] ----------------------- ");
+    Serial.print("[LORA]: ");
     Serial.println(message);
 #endif
   } else {
