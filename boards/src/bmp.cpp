@@ -17,6 +17,7 @@ Adafruit_BMP280 bmp_obj;
 void print_debug(const Data &data) {
   Serial.println("[BMP280]:");
   Serial.print("---------[Temperature] ");
+
   Serial.print(data.temperature);
   Serial.println("°C");
 

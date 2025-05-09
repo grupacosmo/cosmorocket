@@ -28,7 +28,6 @@ void setup() {
   bmp::init();
   mpu::init();
   lora::init();
-
   // Pin mpu_task to core 0
   xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", SIZE, nullptr, 1, nullptr, 0);
   xTaskCreatePinnedToCore(gps::gps_task, "gps", SIZE, nullptr, 1, nullptr, 0);
