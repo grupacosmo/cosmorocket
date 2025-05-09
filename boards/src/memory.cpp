@@ -35,7 +35,7 @@ void set_defaults(Cfg &config) {
   config.first_parachute_height_log = 500;
   config.second_parachute_target = 200;
 
-  config.error_code = 0;
+  config.error_code = error_code_t::NO_ERROR;
   strcpy(config.last_error, "No errors");
 }
 
