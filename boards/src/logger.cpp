@@ -7,9 +7,9 @@ namespace {
 constexpr size_t SERIALIZE_PACKET_SIZE = 1024;
 char buf[SERIALIZE_PACKET_SIZE];
 
+// clang-format off
 int serialize_data(char *buf, size_t len, const Packet &packet) {
   return snprintf(
-      // clang-format off
       buf, len,
       "%u,%u:%u:%u,%u,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f",
       packet.n, packet.gps_data.time.hours, packet.gps_data.time.minutes, 
