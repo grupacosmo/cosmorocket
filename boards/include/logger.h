@@ -16,6 +16,6 @@ struct Packet {
   uint8_t status{};
 };
 
-String serialize(Packet &packet);
+const char *serialize(Packet &packet);
 
 }  // namespace logger
