@@ -3,6 +3,8 @@
 
 namespace memory {
 
+constexpr int error_max_length = 100;
+
 // Flight status enumeration
 enum flight_status_t {
   DEV = 0,                // Development mode
@@ -16,6 +18,10 @@ enum flight_status_t {
   ERROR = 99              // Error state
 };
 
+enum error_code_t {
+  NO_ERROR = 0,           // No error
+};
+
 // Configuration struct
 struct Cfg {
   flight_status_t flight_status;  // Current flight status
@@ -26,8 +32,8 @@ struct Cfg {
   float launch_altitude;          // Altitude at launch site (in meters)
   int first_parachute_height_log;  // Altitude for primary parachute
   int second_parachute_target;     // Altitude for secondary parachute
-  int error_code;                  // Error code for diagnostics
-  char last_error[100];            // Description of the last error
+  error_code_t error_code;           // Error code for diagnostics
+  char last_error[error_max_length]; // Description of the last error
 };
 
 // Declare the global config variable

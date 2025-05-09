@@ -96,6 +96,7 @@ void flight_controller(const logger::Packet &packet) {
       break;
 
     default:
+      Serial.printf("Unknown flight status: %d\n", memory::config.flight_status);
       break;
   }
   second_last_altitude = last_altitude;
