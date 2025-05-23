@@ -1,7 +1,5 @@
 #pragma once
-#include <RadioLib.h>
-#define RADIO_BOARD_TTGO_LORA32_V1_V21
-#include <RadioBoards.h>
+// DO NOT RENAME THIS FILE, IT HAD A CONFLICT WITH LORA.H LIBRARY
 
 namespace lora {
 

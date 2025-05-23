@@ -6,14 +6,9 @@
 #include "gps.h"
 #include "led.h"
 #include "logger.h"
+#include "lora868.h"
 #include "memory.h"
 #include "mpu.h"
-
-#ifdef TBEAM
-#include "lora.h"
-#else
-#include "lora-uart.h"
-#endif
 
 void flight_controller(const logger::Packet &packet);
 void main_task_loop(void *pvParameters);
@@ -60,6 +55,9 @@ void flight_controller(const logger::Packet &packet) {
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
 
   switch (memory::config.flight_status) {
+    case memory::DEV:
+      // Development mode, do nothing
+      break;
     case memory::PRE_LAUNCH:
       if (rel_alt > 5.0) {
         memory::config.flight_status = memory::ASCENT;
@@ -95,7 +93,8 @@ void flight_controller(const logger::Packet &packet) {
       break;
 
     default:
-      Serial.printf("Unknown flight status: %d\n", memory::config.flight_status);
+      Serial.printf("Unknown flight status: %d\n",
+                    memory::config.flight_status);
       break;
   }
   second_last_altitude = last_altitude;
