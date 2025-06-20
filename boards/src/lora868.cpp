@@ -4,7 +4,7 @@
 
 namespace lora {
 
-// We are overwtiting the library pins here don't yell at me
+// We are overwriting the library pins here don't yell at me
 
 #define LORA_SCK 5       // GPIO5 - SX1276 SCK
 #define LORA_MISO 19     // GPIO19 - SX1276 MISO
@@ -34,7 +34,7 @@ void init() {
   Serial.println("LoRa initialized successfully.");
 }
 
-void lora_log(String &message) {
+void lora_log(const String &message) {
   Serial.println(message);
   LoRa.beginPacket();
   LoRa.print(message);
