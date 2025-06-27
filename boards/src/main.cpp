@@ -6,9 +6,14 @@
 #include "gps.h"
 #include "led.h"
 #include "logger.h"
-#include "lora868.h"
 #include "memory.h"
 #include "mpu.h"
+
+#ifdef TBEAM
+#include "lora868.h"
+#else
+#include "lora-uart.h"
+#endif
 
 void flight_controller(const logger::Packet &packet);
 void main_task_loop(void *pvParameters);
@@ -61,6 +66,7 @@ void flight_controller(const logger::Packet &packet) {
     case memory::PRE_LAUNCH:
       if (rel_alt > 5.0) {
         memory::config.flight_status = memory::ASCENT;
+        // Maybe change this to magsaafe detected launch lol
       }
       break;
 
@@ -78,12 +84,14 @@ void flight_controller(const logger::Packet &packet) {
       if (rel_alt < last_altitude && second_last_altitude < last_altitude) {
         memory::config.flight_status = memory::DESCENT_PRIMARY;
       }
+      vTaskDelay(pdMS_TO_TICKS(100));
       break;
 
     case memory::DESCENT_PRIMARY:
-      if (rel_alt < memory::config.second_parachute_target) {
-        memory::config.flight_status = memory::DESCENT_SECONDARY;
-      }
+      memory::config.flight_status = memory::DESCENT_SECONDARY;
+      //   if (rel_alt < memory::config.second_parachute_target) {
+      //     memory::config.flight_status = memory::DESCENT_SECONDARY;
+      //   }
       break;
 
     case memory::DESCENT_SECONDARY:

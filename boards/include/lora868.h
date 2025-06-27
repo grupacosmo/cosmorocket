@@ -4,6 +4,6 @@
 namespace lora {
 
 void init();
-void lora_log(String &message);
+void lora_log(const String &message);
 
 }  // namespace lora
