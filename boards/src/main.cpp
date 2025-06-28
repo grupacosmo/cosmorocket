@@ -10,7 +10,7 @@
 #include "mpu.h"
 
 #ifdef TBEAM
-#include "lora.h"
+#include "lora868.h"
 #else
 #include "lora-uart.h"
 #endif
@@ -60,9 +60,13 @@ void flight_controller(const logger::Packet &packet) {
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
 
   switch (memory::config.flight_status) {
+    case memory::DEV:
+      // Development mode, do nothing
+      break;
     case memory::PRE_LAUNCH:
       if (rel_alt > 5.0) {
         memory::config.flight_status = memory::ASCENT;
+        // Maybe change this to magsaafe detected launch lol
       }
       break;
 
@@ -80,12 +84,14 @@ void flight_controller(const logger::Packet &packet) {
       if (rel_alt < last_altitude && second_last_altitude < last_altitude) {
         memory::config.flight_status = memory::DESCENT_PRIMARY;
       }
+      vTaskDelay(pdMS_TO_TICKS(100));
       break;
 
     case memory::DESCENT_PRIMARY:
-      if (rel_alt < memory::config.second_parachute_target) {
-        memory::config.flight_status = memory::DESCENT_SECONDARY;
-      }
+      memory::config.flight_status = memory::DESCENT_SECONDARY;
+      //   if (rel_alt < memory::config.second_parachute_target) {
+      //     memory::config.flight_status = memory::DESCENT_SECONDARY;
+      //   }
       break;
 
     case memory::DESCENT_SECONDARY:
@@ -95,7 +101,8 @@ void flight_controller(const logger::Packet &packet) {
       break;
 
     default:
-      Serial.printf("Unknown flight status: %d\n", memory::config.flight_status);
+      Serial.printf("Unknown flight status: %d\n",
+                    memory::config.flight_status);
       break;
   }
   second_last_altitude = last_altitude;

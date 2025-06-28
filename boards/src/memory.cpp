@@ -51,7 +51,7 @@ void init() {
   // Load configuration from EEPROM
   load_config();
   // If the configuration is invalid (e.g., uninitialized), set defaults
-  if (config.flight_status == DEV && config.launch_time == 0) {
+  if (config.flight_status == -1) {
     Serial.println("No valid configuration found. Setting defaults...");
     set_defaults(config);
     save_config();
