@@ -48,8 +48,9 @@ void main_task_loop(void *pvParameters) {
     packet.gps_data = gps::get_data();
     flight_controller(packet);
     String message = logger::serialize(packet);
-    lora::lora_log(message);
-    vTaskDelay(pdMS_TO_TICKS(10));
+    // lora::lora_log(message);
+    memory::save_data(message);
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 

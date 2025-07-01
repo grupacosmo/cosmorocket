@@ -2,6 +2,7 @@
 #include <cstdint>
 
 #include "bmp.h"
+#include "board_config.h"
 #include "gps.h"
 #include "mpu.h"
 
