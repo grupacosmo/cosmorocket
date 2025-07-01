@@ -19,7 +19,7 @@ enum flight_status_t {
 };
 
 enum error_code_t {
-  NO_ERROR = 0,           // No error
+  NO_ERROR = 0,  // No error
 };
 
 // Configuration struct
@@ -30,10 +30,10 @@ struct Cfg {
   float gyro_calibration[3];      // Gyroscope calibration offsets (x, y, z)
   float pressure_calibration;     // Barometric pressure calibration offset
   float launch_altitude;          // Altitude at launch site (in meters)
-  int first_parachute_height_log;  // Altitude for primary parachute
-  int second_parachute_target;     // Altitude for secondary parachute
-  error_code_t error_code;           // Error code for diagnostics
-  char last_error[error_max_length]; // Description of the last error
+  int first_parachute_height_log;     // Altitude for primary parachute
+  int second_parachute_target;        // Altitude for secondary parachute
+  error_code_t error_code;            // Error code for diagnostics
+  char last_error[error_max_length];  // Description of the last error
 };
 
 // Declare the global config variable
@@ -45,5 +45,6 @@ void init();
 void save_config();
 void load_config();
 void print_debug();
+void save_data(String &log);
 
 }  // namespace memory

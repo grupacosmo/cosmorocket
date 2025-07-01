@@ -1,5 +1,7 @@
 #include "memory.h"
 
+#include <SPIFFS.h>
+
 #include <cstring>  // For strcpy
 
 namespace memory {
@@ -12,6 +14,7 @@ namespace {
 
 constexpr uint8_t config_addr = 0;           // Address in EEPROM
 constexpr size_t memory_size = sizeof(Cfg);  // EEPROM size
+File file;
 
 }  // namespace
 
@@ -56,6 +59,12 @@ void init() {
     set_defaults(config);
     save_config();
   }
+  SPIFFS.begin(true);
+  file = SPIFFS.open("/data.log", "a");
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    for (;;);
+  }
 }
 
 void save_config() {
@@ -81,5 +90,7 @@ void print_debug() {
       config.launch_altitude, config.first_parachute_height_log,
       config.second_parachute_target, config.error_code, config.last_error);
 }
+
+void save_data(String &log) { file.println(log); }
 
 }  // namespace memory

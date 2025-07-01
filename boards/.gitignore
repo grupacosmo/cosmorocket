@@ -2,3 +2,5 @@
 .vscode
 compile_commands.json
 .cache
+unpacked_fs/
+partition_table_from_flash.bin

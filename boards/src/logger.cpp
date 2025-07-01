@@ -4,7 +4,6 @@ namespace logger {
 
 // Private
 namespace {
-constexpr size_t SERIALIZE_PACKET_SIZE = 1024;
 char buf[SERIALIZE_PACKET_SIZE];
 
 // clang-format off
