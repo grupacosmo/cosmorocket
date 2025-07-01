@@ -9,10 +9,12 @@ char buf[SERIALIZE_PACKET_SIZE];
 
 // clang-format off
 int serialize_data(char *buf, size_t len, const Packet &packet) {
+  static u_int16_t n = 0;
+  n++;
   return snprintf(
       buf, len,
       "%u,%u:%u:%u,%u,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f",
-      packet.n, packet.gps_data.time.hours, packet.gps_data.time.minutes, 
+      n, packet.gps_data.time.hours, packet.gps_data.time.minutes, 
       packet.gps_data.time.seconds, packet.status,
       packet.bmp_data.temperature, packet.bmp_data.pressure, packet.bmp_data.altitude,
       packet.mpu_data.acc_max.x, packet.mpu_data.acc_max.y, packet.mpu_data.acc_max.z,
