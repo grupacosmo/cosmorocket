@@ -1,72 +1,108 @@
 package pl.edu.pk.cosmo.rakieta;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
+import pl.edu.pk.cosmo.rakieta.entity.InfoWithPacket;
 import pl.edu.pk.cosmo.rakieta.entity.SensorPacket;
 import pl.edu.pk.cosmo.rakieta.service.EspRead;
 import pl.edu.pk.cosmo.rakieta.service.FireBaseService;
 
-import java.io.*;
-
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 
 public class Main {
 
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static DatabaseReference reference;
+
     public static void main(String[] args) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+
         FireBaseService fireBaseService = new FireBaseService();
         FirebaseDatabase database = fireBaseService.getDb();
-        try (EspRead data = new EspRead()) {
-            data.choosePort();
+        reference = database.getReference("LoRa");
+
+        try(EspRead lora1 = new EspRead(); EspRead lora2 = new EspRead()) {
+
+            lora1.choosePort();
+            lora2.choosePort();
             System.out.println("Port setup completed");
-            DatabaseReference ref = database.getReference("LoRa");
-            mainLoop(data, objectMapper, ref);
-        } catch (Exception er) {
+            mainLoop(lora1, lora2);
+
+        } catch(Exception e) {
+
             System.err.println("Port setup failed");
-            er.printStackTrace();
+            e.printStackTrace();
             System.exit(1);
+
         }
+
     }
 
-    private static void mainLoop(EspRead data, ObjectMapper objectMapper, DatabaseReference ref) {
-        while (true) {
+    private static void mainLoop(EspRead lora1, EspRead lora2) {
+
+        while(true) {
+
             try {
-                SensorPacket readdata = data.readdata();
-                if (readdata != null){
-                    readAndSend(readdata, ref);
-                    writeToFile(readdata, objectMapper);
+
+                InfoWithPacket readData1 = lora1.readdata();
+                InfoWithPacket readData2 = lora2.readdata();
+
+                if(readData1 != null && readData2 != null) {
+
+                    SensorPacket packet = (readData1.getInfo().getRssi() < readData2.getInfo()
+                        .getRssi() ? readData1 : readData2).getPacket();
+
+                    readAndSend(packet);
+                    writeToFile(packet);
+
                 }
-            } catch (Exception e) {
+
+            } catch(Exception e) {
+
                 e.printStackTrace();
+
             }
+
         }
+
     }
 
-    private static void readAndSend(SensorPacket sensorPacket, DatabaseReference ref) {
-        ref.setValue(sensorPacket, (databaseError, databaseReference) -> {
-            if (databaseError != null) {
+    private static void readAndSend(SensorPacket sensorPacket) {
+
+        reference.push().setValue(sensorPacket, (databaseError, databaseReference) -> {
+
+            if(databaseError != null) {
+
                 System.out.println("Data could not be saved. " + databaseError.getMessage());
+
             } else {
+
                 System.out.println("Data saved successfully.");
+
             }
+
         });
+
     }
-    private static void writeToFile(SensorPacket data, ObjectMapper objectMapper) throws IOException {
-        String saveFile = objectMapper.writeValueAsString(data);
+
+    private static void writeToFile(SensorPacket data) throws IOException {
+
+        String csvToSave = mapper.writeValueAsString(data);
         String fileName = java.time.LocalDate.now().toString() + ".txt";
         File file = new File(fileName);
-        if (file.exists() && !file.isDirectory()) {
-            FileWriter fw = new FileWriter(fileName, true);
-            fw.write("\n");
-            fw.write(saveFile);
-            fw.close();
-        } else {
-            FileWriter fw = new FileWriter(fileName);
-            fw.write(saveFile);
-            fw.close();
-        }
-    }
-}
 
+        try(FileWriter fw = (file.exists() && !file.isDirectory()) ?
+                new FileWriter(file, true) :
+                new FileWriter(file)) {
+
+            fw.write(csvToSave);
+            fw.write("\n");
+
+        }
+
+    }
+
+}
