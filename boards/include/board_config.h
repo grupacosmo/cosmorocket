@@ -25,3 +25,4 @@ constexpr uint8_t SCL_PIN = 15;
 
 constexpr unsigned long BAUD_RATE = 115200;
 constexpr uint32_t SIZE = 10000;
+constexpr size_t SERIALIZE_PACKET_SIZE = 350;
