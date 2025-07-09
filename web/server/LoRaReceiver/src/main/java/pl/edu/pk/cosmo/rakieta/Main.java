@@ -1,35 +1,73 @@
 package pl.edu.pk.cosmo.rakieta;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fazecast.jSerialComm.SerialPort;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import pl.edu.pk.cosmo.rakieta.entity.InfoWithPacket;
 import pl.edu.pk.cosmo.rakieta.entity.SensorPacket;
-import pl.edu.pk.cosmo.rakieta.service.EspRead;
+import pl.edu.pk.cosmo.rakieta.service.LoRa;
 import pl.edu.pk.cosmo.rakieta.service.FireBaseService;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class Main {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectWriter csvWriter = new CsvMapper().writerFor(SensorPacket.class).with(SensorPacket.SCHEMA);
     private static DatabaseReference reference;
+    private static Pattern portsPattern = Pattern.compile("^\\d+(\\s*,\\s*\\d+)*+$");
+    private static Pattern splitPattern = Pattern.compile("\\s*?,");
+    private static FileWriter fileWriter;
 
     public static void main(String[] args) throws IOException {
 
         FireBaseService fireBaseService = new FireBaseService();
         FirebaseDatabase database = fireBaseService.getDb();
-        reference = database.getReference("LoRa");
 
-        try(EspRead lora1 = new EspRead(); EspRead lora2 = new EspRead()) {
+        String fileName = "LoRa-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
 
-            lora1.choosePort();
-            lora2.choosePort();
-            System.out.println("Port setup completed");
-            mainLoop(lora1, lora2);
+        reference = database.getReference(fileName);
+
+        File file = new File(fileName.replace(':', '-'));
+
+        if(file.exists()) {
+
+            fileWriter = new FileWriter(file, true);
+
+        } else {
+
+            fileWriter = new FileWriter(file);
+            fileWriter.write(SensorPacket.SCHEMA.getColumnNames().stream().reduce((a, b) -> a + "," + b).orElse(""));
+            fileWriter.write('\n');
+            fileWriter.flush();
+
+        }
+
+        try(Scanner scanner = new Scanner(System.in)) {
+
+            List<SerialPort> ports = choosePorts(scanner);
+
+            List<LoRa> loras = new ArrayList<>(ports.size());
+
+            for(SerialPort port : ports) {
+
+                LoRa lora = new LoRa();
+                lora.choosePort(port);
+                loras.add(lora);
+
+            }
+
+            mainLoop(loras);
 
         } catch(Exception e) {
 
@@ -41,32 +79,74 @@ public class Main {
 
     }
 
-    private static void mainLoop(EspRead lora1, EspRead lora2) {
+    private static List<SerialPort> choosePorts(Scanner scanner) {
 
-        while(true) {
+        SerialPort[] ports = SerialPort.getCommPorts();
 
-            try {
+        System.out.println("Select ports (ex. 1,3):");
 
-                InfoWithPacket readData1 = lora1.readdata();
-                InfoWithPacket readData2 = lora2.readdata();
+        for(int i = 0; i < ports.length; i++) {
 
-                if(readData1 != null && readData2 != null) {
+            System.out.println(i + 1 + ": " + ports[i].getDescriptivePortName());
 
-                    SensorPacket packet = (readData1.getInfo().getRssi() < readData2.getInfo()
-                        .getRssi() ? readData1 : readData2).getPacket();
+        }
 
-                    readAndSend(packet);
-                    writeToFile(packet);
+        for(;;) {
+
+            System.out.print("Ports: ");
+
+            String line = scanner.nextLine().trim();
+
+            if(!portsPattern.matcher(line).matches()) continue;
+
+            return Arrays.stream(splitPattern.split(line))
+                .map(Integer::parseInt)
+                .map(e -> ports[e - 1])
+                .toList();
+
+        }
+
+    }
+
+    private static void mainLoop(List<LoRa> loras) {
+
+        List<Thread> threads = loras.stream().map(lora -> new Thread(() -> {
+
+            while(true) {
+
+                try {
+
+                SensorPacket data = lora.readData().getPacket();
+
+                readAndSend(data);
+                writeToFile(data);
+
+                } catch(Exception e) {
+
+                    e.printStackTrace();
 
                 }
 
-            } catch(Exception e) {
+            }
 
+        })).toList();
+
+        threads.forEach(Thread::run);
+
+        threads.forEach(t -> {
+
+            try {
+
+                t.join();
+
+            } catch(InterruptedException e) {
+
+                t.interrupt();
                 e.printStackTrace();
 
             }
 
-        }
+        });
 
     }
 
@@ -88,20 +168,12 @@ public class Main {
 
     }
 
-    private static void writeToFile(SensorPacket data) throws IOException {
+    private static synchronized void writeToFile(SensorPacket data) throws IOException {
 
-        String csvToSave = mapper.writeValueAsString(data);
-        String fileName = java.time.LocalDate.now().toString() + ".txt";
-        File file = new File(fileName);
+        String csvToSave = csvWriter.writeValueAsString(data);
 
-        try(FileWriter fw = (file.exists() && !file.isDirectory()) ?
-                new FileWriter(file, true) :
-                new FileWriter(file)) {
-
-            fw.write(csvToSave);
-            fw.write("\n");
-
-        }
+        fileWriter.write(csvToSave);
+        fileWriter.flush();
 
     }
 

@@ -26,34 +26,42 @@ public class FireBaseService {
 
         File credentialsFile = new File(SDK_JSON);
 
-        InputStream credentialsStream = credentialsFile.exists() ? new FileInputStream(credentialsFile) : getClass()
-            .getResourceAsStream(SDK_JSON);
+        try(InputStream credentialsStream = credentialsFile.exists() ? new FileInputStream(credentialsFile) : getClass()
+            .getResourceAsStream(SDK_JSON)) {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        FirebaseCredentials credentials = objectMapper.readValue(credentialsStream, FirebaseCredentials.class);
+            if(credentialsStream.available() <= 0) {
 
-        String privateKeyEnv = System.getenv(FIREBASE_PRIVATE_KEY);
+                throw new RuntimeException("No data in firebase credentials file!");
 
-        if(privateKeyEnv != null && !privateKeyEnv.isEmpty()) {
+            }
 
-            credentials.setPrivateKey(privateKeyEnv);
+            ObjectMapper objectMapper = new ObjectMapper();
+            FirebaseCredentials credentials = objectMapper.readValue(credentialsStream, FirebaseCredentials.class);
+
+            String privateKeyEnv = System.getenv(FIREBASE_PRIVATE_KEY);
+
+            if(privateKeyEnv != null && !privateKeyEnv.isEmpty()) {
+
+                credentials.setPrivateKey(privateKeyEnv);
+
+            }
+
+            String privateKeyIdEnv = System.getenv(FIREBASE_PRIVATE_KEY);
+
+            if(privateKeyIdEnv != null && !privateKeyIdEnv.isEmpty()) {
+
+                credentials.setPrivateKey(privateKeyIdEnv);
+
+            }
+
+            FirebaseOptions options = new FirebaseOptions.Builder()
+                .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(objectMapper.writeValueAsBytes(credentials))))
+                .setDatabaseUrl(URL)
+                .build();
+
+            FirebaseApp.initializeApp(options);
 
         }
-
-        String privateKeyIdEnv = System.getenv(FIREBASE_PRIVATE_KEY);
-
-        if(privateKeyIdEnv != null && !privateKeyIdEnv.isEmpty()) {
-
-            credentials.setPrivateKey(privateKeyIdEnv);
-
-        }
-
-        FirebaseOptions options = new FirebaseOptions.Builder()
-            .setCredentials(GoogleCredentials
-                .fromStream(new ByteArrayInputStream(objectMapper.writeValueAsBytes(credentials))))
-            .setDatabaseUrl(URL).build();
-
-        FirebaseApp.initializeApp(options);
 
         db = FirebaseDatabase.getInstance();
 

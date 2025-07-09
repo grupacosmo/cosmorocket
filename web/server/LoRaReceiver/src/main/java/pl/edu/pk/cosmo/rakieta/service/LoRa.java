@@ -9,59 +9,22 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fazecast.jSerialComm.SerialPort;
 
 import pl.edu.pk.cosmo.rakieta.LoRaException;
 import pl.edu.pk.cosmo.rakieta.entity.*;
 
-public class EspRead implements Closeable {
+public class LoRa implements Closeable {
 
     public static final int LORA_BOUND_RATE = 9600;
     private BufferedReader serialInput;
     private OutputStreamWriter serialOutput;
-    private CsvMapper mapper;
-    private CsvSchema schema;
-    private Pattern infoPattern;
+    private Pattern infoPattern = Pattern.compile("LEN:(?<LEN>\\d*?), RSSI:(?<RSSI>-?\\d*?), SNR:(?<SNR>\\d*)");
+    private ObjectReader reader = new CsvMapper().readerFor(SensorPacket.class).with(SensorPacket.SCHEMA);
 
-    public EspRead() {
-
-        infoPattern = Pattern.compile("LEN:(?<LEN>\\d*?), RSSI:(?<RSSI>-?\\d*?), SNR:(?<SNR>\\d*)");
-
-        mapper = new CsvMapper();
-        schema = mapper.schemaFor(SensorPacket.class).withoutHeader();
-
-    }
-
-    public void choosePort() throws IOException {
-
-        SerialPort[] ports = SerialPort.getCommPorts();
-
-        System.out.print("Select a port: ");
-
-        for(int i = 0; i < ports.length; i++) {
-
-            SerialPort port = ports[i];
-            System.out.println(i + 1 + ": " + port.getSystemPortName());
-
-        }
-
-        SerialPort serialPort;
-
-        try(Scanner s = new Scanner(System.in)) {
-
-            int chosenPort;
-
-            do {
-
-                chosenPort = s.nextInt();
-
-            } while(chosenPort < 0 || chosenPort - 1 >= ports.length);
-
-            serialPort = ports[chosenPort - 1];
-
-        }
+    public void choosePort(SerialPort serialPort) throws IOException {
 
         setupPort(serialPort);
 
@@ -69,6 +32,37 @@ public class EspRead implements Closeable {
         serialOutput = new OutputStreamWriter(serialPort.getOutputStream());
 
         setupLora();
+
+    }
+
+    public void choosePort(Scanner s) throws IOException {
+
+        SerialPort[] ports = SerialPort.getCommPorts();
+
+        System.out.println("Select a port: ");
+
+        for(int i = 0; i < ports.length; i++) {
+
+            SerialPort port = ports[i];
+            System.out.println(i + 1 + ": " + port.getDescriptivePortName());
+
+        }
+
+        SerialPort serialPort;
+
+        int chosenPort = 0;
+
+        do {
+
+            chosenPort = s.nextInt();
+
+        } while(chosenPort < 1 || chosenPort > ports.length);
+
+        serialPort = ports[chosenPort - 1];
+
+        s.nextLine();
+
+        choosePort(serialPort);
 
     }
 
@@ -86,7 +80,7 @@ public class EspRead implements Closeable {
             final String UNABLE_TO_OPEN_THE_PORT = "Unable to open the port.";
 
             System.err.println(UNABLE_TO_OPEN_THE_PORT);
-            throw new EspReadException(UNABLE_TO_OPEN_THE_PORT);
+            throw new LoRaException(UNABLE_TO_OPEN_THE_PORT);
 
         }
 
@@ -130,7 +124,7 @@ public class EspRead implements Closeable {
 
     }
 
-    public InfoWithPacket readdata() throws IOException {
+    public InfoWithPacket readData() throws IOException {
 
         String infoLine = serialInput.readLine();
         String dataLine = serialInput.readLine();
@@ -182,7 +176,7 @@ public class EspRead implements Closeable {
 
         try {
 
-            return mapper.readerFor(SensorPacket.class).with(schema).readValue(split, SensorPacket.class);
+            return reader.readValue(split, SensorPacket.class);
 
         } catch(Exception e) {
 
