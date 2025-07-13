@@ -38,7 +38,7 @@ public class Main {
 
         reference = database.getReference(fileName);
 
-        File file = new File(fileName.replace(':', '-'));
+        File file = new File(fileName.replace(':', '-') + ".txt");
 
         if(file.exists()) {
 
@@ -87,7 +87,9 @@ public class Main {
 
         for(int i = 0; i < ports.length; i++) {
 
-            System.out.println(i + 1 + ": " + ports[i].getDescriptivePortName());
+            SerialPort port = ports[i];
+
+            System.out.println(i + 1 + ": " + port.getSystemPortPath() + " " + port.getDescriptivePortName());
 
         }
 
@@ -112,14 +114,16 @@ public class Main {
 
         List<Thread> threads = loras.stream().map(lora -> new Thread(() -> {
 
+            System.out.println("Lora running");
+
             while(true) {
 
                 try {
 
-                SensorPacket data = lora.readData().getPacket();
+                    SensorPacket data = lora.readData().getPacket();
 
-                readAndSend(data);
-                writeToFile(data);
+                    readAndSend(data);
+                    writeToFile(data);
 
                 } catch(Exception e) {
 
@@ -129,9 +133,10 @@ public class Main {
 
             }
 
-        })).toList();
+        }))
+            .toList();
 
-        threads.forEach(Thread::run);
+        threads.forEach(Thread::start);
 
         threads.forEach(t -> {
 
