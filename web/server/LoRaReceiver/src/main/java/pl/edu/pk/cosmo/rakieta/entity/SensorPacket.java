@@ -65,7 +65,7 @@ public class SensorPacket {
         private Vector3<Integer> gyroscopeAverage;
 
         @JsonUnwrapped(prefix = "rotation_average_")
-        private Vector4<Integer> rotationAverage;
+        private Vector4<Float> rotationAverage;
 
     }
 
