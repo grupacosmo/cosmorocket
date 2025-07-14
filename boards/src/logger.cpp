@@ -12,7 +12,7 @@ int serialize_data(char *buf, size_t len, const Packet &packet) {
   n++;
   return snprintf(
       buf, len,
-      "%u,%u:%u:%u,%u,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f",
+      "%u,%u,%u,%u,%u,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f",
       n, packet.gps_data.time.hours, packet.gps_data.time.minutes, 
       packet.gps_data.time.seconds, packet.status,
       packet.bmp_data.temperature, packet.bmp_data.pressure, packet.bmp_data.altitude,
