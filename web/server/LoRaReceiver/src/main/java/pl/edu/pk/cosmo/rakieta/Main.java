@@ -53,9 +53,27 @@ public class Main {
 
         }
 
-        try(Scanner scanner = new Scanner(System.in)) {
+        List<SerialPort> ports = choosePorts();
 
-            List<SerialPort> ports = choosePorts(scanner);
+        if(ports.isEmpty()) {
+
+            System.err.println("Couldn't detect LoRa's, manual input required.");
+
+            try(Scanner scanner = new Scanner(System.in)) {
+
+                ports = choosePorts(scanner);
+
+            }
+
+        }
+
+        if(ports.isEmpty()) {
+
+            System.err.println("Ports not selected!");
+
+        }
+
+        try {
 
             List<LoRa> loras = new ArrayList<>(ports.size());
 
@@ -76,6 +94,12 @@ public class Main {
             System.exit(1);
 
         }
+
+    }
+
+    private static List<SerialPort> choosePorts() {
+
+        return Arrays.stream(SerialPort.getCommPorts()).filter(e -> e.getSystemPortPath().contains("cosmopie/LORA")).toList();
 
     }
 
