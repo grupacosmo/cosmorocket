@@ -99,7 +99,23 @@ public class Main {
 
     private static List<SerialPort> choosePorts() {
 
-        return Arrays.stream(SerialPort.getCommPorts()).filter(e -> e.getSystemPortPath().contains("cosmopie/LORA")).toList();
+        return Arrays.stream(SerialPort.getCommPorts())
+            .filter(e -> e.getVendorID() == 0x10c4 && e.getProductID() == 0xea60)
+            .toList();
+
+    }
+
+    private static List<SerialPort> choosePortsls() {
+
+        File lorasLocation = new File("/dev/cosmolora");
+
+        if(!lorasLocation.exists() && !lorasLocation.isDirectory()) return List.of();
+
+        return Arrays.stream(lorasLocation.listFiles())
+            .map(File::getAbsolutePath)
+            .filter(path -> path.contains("cosmolora/LORA"))
+            .map(path -> SerialPort.getCommPort(path))
+            .toList();
 
     }
 
