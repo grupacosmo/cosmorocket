@@ -14,15 +14,15 @@ namespace lora {
 #define LORA_IRQ 26      // GPIO26 - SX1276 IRQ (interrupt request)
 
 constexpr int spreading_factor = 12;  // Ranges from 6-12, default is 7
-constexpr int bandwidth = 500E3;      // Set bandwidth
-constexpr int tx_power = 14;  // Set transmission power (default 14,  flight 22)
+constexpr int bandwidth = 125E3;
+constexpr int tx_power = 1;  // Set transmission power (default 1,  flight 22)
 constexpr int frequency = 868E6;  // Set frequency to 868 MHz
 
 void init() {
   Serial.print("[SX1262] Initializing ... ");
   LoRa.setPins(LORA_CS, LORA_RST_PIN, LORA_IRQ);
 
-  if (!LoRa.begin(frequency)) {  // Set frequency to 868 MHz
+  if (!LoRa.begin(frequency)) {
     Serial.println("Starting LoRa failed!");
     while (1);  // If LoRa won't start, enter infinite loop
   }

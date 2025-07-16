@@ -4,6 +4,7 @@
 #include "bmp.h"
 #include "board_config.h"
 #include "gps.h"
+#include "ignition.h"
 #include "led.h"
 #include "logger.h"
 #include "memory.h"
@@ -27,6 +28,7 @@ void setup() {
   gps::init();
   bmp::init();
   mpu::init();
+  ignition::init();
   lora::init();
   // Pin mpu_task to core 0
   xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", SIZE, nullptr, 1, nullptr, 0);
