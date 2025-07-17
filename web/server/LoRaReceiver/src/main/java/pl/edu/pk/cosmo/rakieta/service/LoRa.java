@@ -227,6 +227,8 @@ public class LoRa implements Closeable {
 
         serialOutput.write("AT+TEST=TXLRSTR," + line + "\r\n");
         serialOutput.flush();
+        serialOutput.write("AT+TEST=RXLRPKT\r\n");
+        serialOutput.flush();
 
     }
 

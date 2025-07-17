@@ -3,6 +3,7 @@ package pl.edu.pk.cosmo.rakieta;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fazecast.jSerialComm.SerialPort;
+import com.google.common.collect.Streams;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -36,14 +37,14 @@ public class Main implements Runnable {
     private Pattern portsPattern = Pattern.compile("^\\d+(\\s*,\\s*\\d+)*+$");
     private Pattern splitPattern = Pattern.compile("\\s*?,");
     @Option(names = { "-o", "--output_location" })
-    private String outputFileLocation = ".";
+    private List<String> outputFileLocations = List.of(".");
     @Option(names = { "-r", "--raw_output_location" })
-    private String rawOutputFileLocation = ".";
+    private List<String> rawOutputFileLocations = List.of(".");
     @Option(names = { "-c", "--credentials" })
     private String sdkCredentials = "firebase-credentials.json";
     @Parameters(index = "0")
     private String url = "";
-    private String fileName;
+    private String filename;
     private static final Scanner scanner = new Scanner(System.in);
 
     @Override
@@ -71,7 +72,7 @@ public class Main implements Runnable {
             FirebaseDatabase database = fireBaseService.getDb();
 
             String receiptName = "LoRa-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-            fileName = receiptName.replace(':', '-');
+            filename = receiptName.replace(':', '-');
 
             reference = database.getReference(receiptName);
 
@@ -204,72 +205,138 @@ public class Main implements Runnable {
 
                 LoRa lora = loras.get(index);
 
-                File rawOutputFile = new File(rawOutputFileLocation, fileName + "=RAW_LORA_" + index + ".txt");
+                List<File> rawOutputFiles = rawOutputFileLocations.stream().map(location -> new File(location, filename + "=RAW_LORA_" + index + ".txt")).toList();
 
-                if(!rawOutputFile.exists()) {
+                rawOutputFiles.stream().filter(file -> !file.exists()).map(File::getParentFile).forEach(File::mkdirs);
 
-                    rawOutputFile.getParentFile().mkdirs();
+                List<FileWriter> rawOutputFileWriters = rawOutputFiles.stream().map(file -> {
 
-                }
+                    try {
 
-                File outputFile = new File(outputFileLocation, fileName + "=LORA_" + index + ".txt");
+                        return new FileWriter(file);
 
-                if(!outputFile.exists()) {
+                    } catch(IOException e) {
 
-                    outputFile.getParentFile().mkdirs();
-
-                }
-
-                try(FileWriter rawOutputFileWriter = new FileWriter(rawOutputFile, rawOutputFile.exists());
-                    FileWriter outputFileWriter = new FileWriter(outputFile, outputFile.exists())) {
-
-                    if(!outputFile.exists()) {
-
-                        outputFileWriter.write(SensorPacket.SCHEMA.getColumnNames().stream().reduce((a, b) -> a + "," + b).orElse(""));
-                        outputFileWriter.write('\n');
-                        outputFileWriter.flush();
+                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
 
                     }
+
+                    return null;
+
+                })
+                    .toList();
+
+                List<File> outputFiles = outputFileLocations.stream().map(location -> new File(location, filename + "=LORA_" + index + ".txt")).toList();
+
+                outputFiles.stream().filter(file -> !file.exists()).map(File::getParentFile).forEach(File::mkdirs);
+
+                List<FileWriter> outputFileWriters = outputFiles.stream().map(file -> {
+
+                    try {
+
+                        return new FileWriter(file);
+
+                    } catch(IOException e) {
+
+                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
+
+                    }
+
+                    return null;
+
+                })
+                    .toList();
+
+                Streams.zip(outputFiles.stream(), outputFileWriters.stream(), (file, writer) -> {
+
+                    if(!file.exists()) return null;
+
+                    try {
+
+                        writer.write(SensorPacket.SCHEMA.getColumnNames().stream().reduce((a, b) -> a + "," + b).orElse(""));
+                        writer.write(System.lineSeparator());
+                        writer.flush();
+
+                    } catch(IOException e) {
+
+                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
+
+                    }
+
+                    return null;
+
+                })
+                    .close();
+
+                try {
 
                     lora.choosePort();
-
-                    while(true) {
-
-                        try {
-
-                            List<String> data = lora.readData();
-
-                            writeToFile(rawOutputFileWriter, data);
-
-                            InfoWithPacket infoPacket = LoRa.parseData(data);
-
-                            SensorPacket packet = infoPacket.getPacket();
-
-                            synchronized(history) {
-
-                                if(!history.contains(packet)) {
-
-                                    history.add(packet);
-
-                                    readAndSend(packet);
-
-                                }
-
-                            }
-
-                            writeToFile(outputFileWriter, packet);
-
-                        } catch(Exception e) {
-
-                            e.printStackTrace();
-
-                        }
-
-                    }
 
                 } catch(IOException e) {
 
                     e.printStackTrace();
+                    return;
+
+                }
+
+                while(true) {
+
+                    try {
+
+                        List<String> data = lora.readData();
+
+                        rawOutputFileWriters.forEach(writer -> {
+
+                            try {
+
+                                writeToFile(writer, data);
+
+                            } catch(IOException e) {
+
+                                e.printStackTrace();
+
+                            }
+
+                        });
+
+                        InfoWithPacket infoPacket = LoRa.parseData(data);
+
+                        SensorPacket packet = infoPacket.getPacket();
+
+                        synchronized(history) {
+
+                            if(!history.contains(packet)) {
+
+                                history.add(packet);
+
+                                readAndSend(packet);
+
+                            }
+
+                        }
+
+                        outputFileWriters.forEach(writer -> {
+
+                            try {
+
+                                writeToFile(writer, packet);
+
+                            } catch(IOException e) {
+
+                                e.printStackTrace();
+
+                            }
+
+                        });
+
+                    } catch(Exception e) {
+
+                        e.printStackTrace();
+
+                    }
 
                 }
 

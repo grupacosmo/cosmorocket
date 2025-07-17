@@ -1,8 +1,5 @@
 package pl.edu.pk.cosmo.rakieta;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Optional;
 
 public class Utils {
