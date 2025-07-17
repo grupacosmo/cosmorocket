@@ -9,6 +9,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +17,7 @@ import pl.edu.pk.cosmo.rakieta.Vector3;
 import pl.edu.pk.cosmo.rakieta.Vector4;
 import pl.edu.pk.cosmo.rakieta.service.FireBaseService;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -74,10 +76,10 @@ class SensorPacketTest {
                     54
                 ),
                 new Vector4<>(
-                    25,
-                    43,
-                    54,
-                    12
+                    25.f,
+                    43.f,
+                    54.f,
+                    12.f
                 )
             ),
             new SensorPacket.GPS(
@@ -145,10 +147,10 @@ class SensorPacketTest {
                     54
                 ),
                 new Vector4<>(
-                    25,
-                    43,
-                    54,
-                    12
+                    25.f,
+                    43.f,
+                    54.f,
+                    12.f
                 )
             ),
             new SensorPacket.GPS(
@@ -197,10 +199,10 @@ class SensorPacketTest {
                     54
                 ),
                 new Vector4<>(
-                    25,
-                    43,
-                    54,
-                    12
+                    25.f,
+                    43.f,
+                    54.f,
+                    12.f
                 )
             ),
             new SensorPacket.GPS(
@@ -210,7 +212,7 @@ class SensorPacketTest {
             )
         );
 
-        fireBaseService = new FireBaseService();
+        fireBaseService = new FireBaseService("https://cosmopklora-default-rtdb.europe-west1.firebasedatabase.app/", new File("firebase-credentials.json"));
         FirebaseDatabase database = fireBaseService.getDb();
         DatabaseReference ref = database.getReference("LoRa-test");
 
@@ -221,7 +223,7 @@ class SensorPacketTest {
             @Override
             public void run() {
 
-                ref.push().setValue(packet, (error, reference) -> {
+                ref.push().setValue(packet, (error, _) -> {
 
                     if(error != null) {
                         System.out.println("Data could not be saved. " + error.getMessage());
@@ -244,7 +246,7 @@ class SensorPacketTest {
 
             result.get(10, TimeUnit.SECONDS);
 
-        } catch(TimeoutException e) {
+        } catch(TimeoutException _) {
 
             assertTrue(false);
 

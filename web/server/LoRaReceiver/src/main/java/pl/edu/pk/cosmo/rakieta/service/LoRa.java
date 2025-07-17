@@ -5,6 +5,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,23 +15,42 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fazecast.jSerialComm.SerialPort;
 
+import lombok.Getter;
 import pl.edu.pk.cosmo.rakieta.LoRaException;
 import pl.edu.pk.cosmo.rakieta.entity.*;
 
 public class LoRa implements Closeable {
 
     public static final int LORA_BOUND_RATE = 9600;
+    private static final Pattern infoPattern = Pattern.compile("LEN:(?<LEN>\\d*?), RSSI:(?<RSSI>-?\\d*?), SNR:(?<SNR>\\d*)");
     private BufferedReader serialInput;
     private OutputStreamWriter serialOutput;
-    private Pattern infoPattern = Pattern.compile("LEN:(?<LEN>\\d*?), RSSI:(?<RSSI>-?\\d*?), SNR:(?<SNR>\\d*)");
-    private ObjectReader reader = new CsvMapper().readerFor(SensorPacket.class).with(SensorPacket.SCHEMA);
+    private static final ObjectReader reader = new CsvMapper().readerFor(SensorPacket.class).with(SensorPacket.SCHEMA);
+    private SerialPort port;
 
-    public void choosePort(SerialPort serialPort) throws IOException {
+    @Getter
+    private String name;
 
-        setupPort(serialPort);
+    public LoRa(SerialPort port) {
 
-        serialInput = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
-        serialOutput = new OutputStreamWriter(serialPort.getOutputStream());
+        name = port.getSystemPortPath();
+        this.port = port;
+
+    }
+
+    public void choosePort() throws IOException {
+
+        Objects.requireNonNull(port);
+        choosePort(port);
+
+    }
+
+    public void choosePort(SerialPort port) throws IOException {
+
+        setupPort(port);
+
+        serialInput = new BufferedReader(new InputStreamReader(port.getInputStream()));
+        serialOutput = new OutputStreamWriter(port.getOutputStream());
 
         setupLora();
 
@@ -124,30 +145,44 @@ public class LoRa implements Closeable {
 
     }
 
-    public InfoWithPacket readData() throws IOException {
+    public List<String> readData() throws IOException {
 
         String infoLine = serialInput.readLine();
         String dataLine = serialInput.readLine();
 
+        return List.of(infoLine, dataLine);
+
+    }
+
+    public static InfoWithPacket parseData(List<String> data) {
+
+        String infoLine = data.get(0);
+        String dataLine = data.get(1);
+
         if(infoLine == null || infoLine.equals("0") || !infoLine.startsWith("+TEST: LEN")) { return null; }
         if(dataLine == null || dataLine.equals("0") || !dataLine.startsWith("+TEST: RX")) { return null; }
 
-        System.out.println("READ: " + dataLine);
+        LoRaRXInfo info = parseInfo(infoLine);
 
-        Matcher infoMatcher = infoPattern.matcher(infoLine);
+        if(info == null) return null;
+
+        String parsedData = parseRX(dataLine);
+
+        return new InfoWithPacket(info, toPacket(parsedData));
+
+    }
+
+    private static LoRaRXInfo parseInfo(String line) {
+
+        Matcher infoMatcher = infoPattern.matcher(line);
 
         if(!infoMatcher.find()) return null;
 
-        LoRaRXInfo info = new LoRaRXInfo(
+        return new LoRaRXInfo(
             Integer.parseInt(infoMatcher.group("LEN")),
             Integer.parseInt(infoMatcher.group("RSSI")),
             Integer.parseInt(infoMatcher.group("SNR"))
         );
-
-        String parsedData = parseRX(dataLine);
-        System.out.println("READ PARSED: " + parsedData);
-
-        return new InfoWithPacket(info, toPacket(parsedData));
 
     }
 
@@ -172,7 +207,7 @@ public class LoRa implements Closeable {
 
     }
 
-    SensorPacket toPacket(String split) {
+    private static SensorPacket toPacket(String split) {
 
         try {
 
@@ -185,6 +220,13 @@ public class LoRa implements Closeable {
         }
 
         return null;
+
+    }
+
+    public void send(String line) throws IOException {
+
+        serialOutput.write("AT+TEST=TXLRSTR," + line + "\r\n");
+        serialOutput.flush();
 
     }
 

@@ -13,21 +13,17 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.database.FirebaseDatabase;
 
 import pl.edu.pk.cosmo.rakieta.FirebaseCredentials;
+import pl.edu.pk.cosmo.rakieta.Utils;
 
 public class FireBaseService {
 
-    public static final String URL = "https://cosmopklora-default-rtdb.europe-west1.firebasedatabase.app/";
-    public static final String SDK_JSON = "firebase-credentials.json";
     public static final String FIREBASE_PRIVATE_KEY = "FIREBASE_PRIVATE_KEY";
     public static final String FIREBASE_PRIVATE_KEY_ID = "FIREBASE_PRIVATE_KEY_ID";
     private FirebaseDatabase db;
 
-    public FireBaseService() throws IOException {
+    public FireBaseService(String url, File credentialsFile) throws IOException {
 
-        File credentialsFile = new File(SDK_JSON);
-
-        try(InputStream credentialsStream = credentialsFile.exists() ? new FileInputStream(credentialsFile) : getClass()
-            .getResourceAsStream(SDK_JSON)) {
+        try(InputStream credentialsStream = new FileInputStream(credentialsFile)) {
 
             if(credentialsStream.available() <= 0) {
 
@@ -38,25 +34,13 @@ public class FireBaseService {
             ObjectMapper objectMapper = new ObjectMapper();
             FirebaseCredentials credentials = objectMapper.readValue(credentialsStream, FirebaseCredentials.class);
 
-            String privateKeyEnv = System.getenv(FIREBASE_PRIVATE_KEY);
+            Utils.getEnv(FIREBASE_PRIVATE_KEY).ifPresent(credentials::setPrivateKey);
 
-            if(privateKeyEnv != null && !privateKeyEnv.isEmpty()) {
-
-                credentials.setPrivateKey(privateKeyEnv);
-
-            }
-
-            String privateKeyIdEnv = System.getenv(FIREBASE_PRIVATE_KEY);
-
-            if(privateKeyIdEnv != null && !privateKeyIdEnv.isEmpty()) {
-
-                credentials.setPrivateKey(privateKeyIdEnv);
-
-            }
+            Utils.getEnv(FIREBASE_PRIVATE_KEY_ID).ifPresent(credentials::setPrivateKeyId);
 
             FirebaseOptions options = new FirebaseOptions.Builder()
                 .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(objectMapper.writeValueAsBytes(credentials))))
-                .setDatabaseUrl(URL)
+                .setDatabaseUrl(url)
                 .build();
 
             FirebaseApp.initializeApp(options);

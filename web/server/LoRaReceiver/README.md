@@ -4,3 +4,5 @@ Application uses environmental variables to overwrite values from firebase-crede
 
 - FIREBASE_PRIVATE_KEY
 - FIREBASE_PRIVATE_KEY_ID
+
+https://cosmopklora-default-rtdb.europe-west1.firebasedatabase.app/
