@@ -54,6 +54,7 @@ String lora_read() {
     }
     return message.c_str();
   }
+  return "";
 }
 
 }  // namespace lora

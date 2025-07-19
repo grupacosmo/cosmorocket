@@ -59,7 +59,6 @@ void main_task_loop(void *pvParameters) {
 // First draft of the flight controller logic
 void flight_controller(const logger::Packet &packet) {
   static float last_altitude = 0.0;
-  static float second_last_altitude = 0.0;
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
 
   switch (memory::config.status) {
@@ -117,6 +116,5 @@ void flight_controller(const logger::Packet &packet) {
       Serial.printf("Unknown flight status: %d\n", memory::config.status);
       break;
   }
-  second_last_altitude = last_altitude;
   last_altitude = rel_alt;
 }
