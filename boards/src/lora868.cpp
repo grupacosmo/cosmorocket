@@ -1,4 +1,6 @@
 #ifdef TBEAM
+#include "lora868.h"
+
 #include <LoRa.h>  // https://github.com/sandeepmistry/arduino-LoRa
 #include <SPI.h>
 
@@ -40,6 +42,17 @@ void lora_log(const String &message) {
   LoRa.print(message);
   if (LoRa.endPacket() == 0) {
     Serial.println("[ERROR] Failed to send LoRa packet!");
+  }
+}
+
+String lora_read() {
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    String message = "";
+    while (LoRa.available()) {
+      message += (char)LoRa.read();
+    }
+    return message.c_str();
   }
 }
 

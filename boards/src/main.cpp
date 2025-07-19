@@ -62,50 +62,59 @@ void flight_controller(const logger::Packet &packet) {
   static float second_last_altitude = 0.0;
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
 
-  switch (memory::config.flight_status) {
+  switch (memory::config.status) {
     case memory::DEV:
-      // Development mode, do nothing
+      if (lora::lora_read() == "LAUNCH") {
+        memory::config.launch_altitude = packet.bmp_data.altitude;
+        memory::config.status = memory::PRE_LAUNCH;
+        break;
+      }
       break;
     case memory::PRE_LAUNCH:
       if (rel_alt > 5.0) {
-        memory::config.flight_status = memory::ASCENT;
+        memory::config.status = memory::ASCENT;
         // Maybe change this to magsaafe detected launch lol
       }
       break;
 
     case memory::ASCENT:
-      // Detect apogee when altitude stops increasing
-      if (second_last_altitude > last_altitude) {
-        memory::config.flight_status = memory::APOGEE;
-        Serial.printf("Apogee detected at %.2f meters\n", second_last_altitude);
-        memory::config.first_parachute_height_log =
-            static_cast<int>(second_last_altitude);
-      }
-      break;
+      static int apogee_counter = 0;
 
-    case memory::APOGEE:
-      if (rel_alt < last_altitude && second_last_altitude < last_altitude) {
-        memory::config.flight_status = memory::DESCENT_PRIMARY;
+      if (rel_alt < last_altitude) {
+        apogee_counter++;
+      } else {
+        apogee_counter = 0;
       }
-      vTaskDelay(pdMS_TO_TICKS(100));
+      if (apogee_counter >= 5) {
+        Serial.printf("Apogee detected at %.2f meters\n", last_altitude);
+        memory::config.first_parachute_height_log =
+            static_cast<int>(last_altitude);
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+        ignition::fire(1);
+
+        memory::config.status = memory::DESCENT_PRIMARY;
+      }
       break;
 
     case memory::DESCENT_PRIMARY:
-      memory::config.flight_status = memory::DESCENT_SECONDARY;
-      //   if (rel_alt < memory::config.second_parachute_target) {
-      //     memory::config.flight_status = memory::DESCENT_SECONDARY;
-      //   }
-      break;
+      static int landing_counter = 0;
 
-    case memory::DESCENT_SECONDARY:
-      if (rel_alt < 5.0) {
-        memory::config.flight_status = memory::RECOVERY;
+      if (std::abs(rel_alt - last_altitude) < 1.0) {
+        landing_counter++;
+      } else {
+        landing_counter = 0;
       }
+
+      if (landing_counter > 50) {
+        memory::config.status = memory::RECOVERY;
+      }
+      break;
+    case memory::RECOVERY:
       break;
 
     default:
-      Serial.printf("Unknown flight status: %d\n",
-                    memory::config.flight_status);
+      Serial.printf("Unknown flight status: %d\n", memory::config.status);
       break;
   }
   second_last_altitude = last_altitude;
