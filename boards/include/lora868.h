@@ -7,6 +7,9 @@ namespace lora {
 
 void init();
 void lora_log(const String &message);
-String lora_read();
+bool is_packet_received();
+String get_received_message();
+void clear_packet_flag();
+// String lora_read();
 
 }  // namespace lora

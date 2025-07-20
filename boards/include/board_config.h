@@ -29,7 +29,7 @@ constexpr int8_t SD_SS = 5;
 constexpr uint8_t SDA_PIN = 13;
 constexpr uint8_t SCL_PIN = 15;
 
-//pin 99 means unimplemented or not used
+// pin 99 means unimplemented or not used
 constexpr uint8_t P1 = 99;
 constexpr uint8_t P2 = 99;
 constexpr uint8_t P3 = 99;
@@ -41,4 +41,4 @@ constexpr uint8_t PT3 = 99;
 
 constexpr unsigned long BAUD_RATE = 115200;
 constexpr uint32_t SIZE = 10000;
-constexpr size_t SERIALIZE_PACKET_SIZE = 350;
+constexpr size_t SERIALIZE_PACKET_SIZE = 250;
