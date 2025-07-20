@@ -16,22 +16,17 @@ constexpr uint8_t TX_PIN = 12;
 constexpr uint8_t SERIAL_NUM = 1;
 constexpr uint16_t MAX_BYTES_PER_CYCLE = 256;
 
-// --- Shared Data ---
 Data gps_data;
-// --- End Shared Data ---
 
 TinyGPSPlus tiny_gps;
-SemaphoreHandle_t gps_data_mutex;  // Renamed for clarity and consistency
+SemaphoreHandle_t gps_mutex;
 
 }  // namespace
 
 HardwareSerial GPSSerial(SERIAL_NUM);
 
 void init() {
-  gps_data_mutex = xSemaphoreCreateMutex();
-  if (gps_data_mutex == NULL) {
-    Serial.println("!!! FAILED to create GPS mutex");
-  }
+  gps_mutex = xSemaphoreCreateMutex();
   GPSSerial.begin(BAUD_RATE, SERIAL_8N1, RX_PIN, TX_PIN);
   Serial.println("GPS initialized successfully.");
 }
@@ -51,9 +46,9 @@ void print_data() {
 
 Data get_data() {
   Data temp_data;
-  if (xSemaphoreTake(gps_data_mutex, pdMS_TO_TICKS(10))) {
+  if (xSemaphoreTake(gps_mutex, pdMS_TO_TICKS(10))) {
     temp_data = gps_data;
-    xSemaphoreGive(gps_data_mutex);
+    xSemaphoreGive(gps_mutex);
   } else {
     Serial.println("Warning: Failed to get GPS mutex in get_data()");
   }
@@ -70,13 +65,13 @@ void gps_task([[maybe_unused]] void* pvParameters) {
 
       if (msg_finished && tiny_gps.location.isValid() &&
           tiny_gps.time.isValid()) {
-        if (xSemaphoreTake(gps_data_mutex, pdMS_TO_TICKS(10))) {
+        if (xSemaphoreTake(gps_mutex, pdMS_TO_TICKS(10))) {
           gps_data.lat = tiny_gps.location.lat();
           gps_data.lng = tiny_gps.location.lng();
           gps_data.time.hours = tiny_gps.time.hour();
           gps_data.time.minutes = tiny_gps.time.minute();
           gps_data.time.seconds = tiny_gps.time.second();
-          xSemaphoreGive(gps_data_mutex);
+          xSemaphoreGive(gps_mutex);
         } else {
           Serial.println("Warning: Failed to get GPS mutex in gps_task()");
         }

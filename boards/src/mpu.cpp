@@ -17,12 +17,12 @@ bool init_success = false;
 constexpr uint8_t MPU_CALIBRATION_ITER_CNT = 6;
 constexpr uint8_t MAX_PACKETS_PER_CYCLE = 5;
 
-SemaphoreHandle_t mpu_semaphore;
+SemaphoreHandle_t mpu_mutex;
 
 };  // namespace
 
 void init() {
-  mpu_semaphore = xSemaphoreCreateMutex();
+  mpu_mutex = xSemaphoreCreateMutex();
   mpudev.initialize();
 
   if (!mpudev.testConnection()) {
@@ -117,7 +117,7 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
       mpudev.dmpGetAccel(&iaccel, FIFOBuffer);
       mpudev.dmpGetGyro(&igyro, FIFOBuffer);
 
-      if (xSemaphoreTake(mpu_semaphore, pdMS_TO_TICKS(10))) {
+      if (xSemaphoreTake(mpu_mutex, pdMS_TO_TICKS(10))) {
         process_vectors(internal.acc_max, internal.acc_avg, iaccel);
         process_vectors(internal.gyro_max, internal.gyro_avg, igyro);
 
@@ -127,7 +127,7 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
         internal.rot_avg.w += q.w;
 
         count++;
-        xSemaphoreGive(mpu_semaphore);
+        xSemaphoreGive(mpu_mutex);
       } else {
         Serial.println("Warning: Failed to get MPU mutex in mpu_task()");
       }
