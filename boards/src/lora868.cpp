@@ -1,4 +1,3 @@
-#ifdef TBEAM
 #include "lora868.h"
 
 #include <LoRa.h>  // https://github.com/sandeepmistry/arduino-LoRa
@@ -64,4 +63,3 @@ void lora_log(const String &message) {
 }
 
 }  // namespace lora
-#endif  // TBEAM
