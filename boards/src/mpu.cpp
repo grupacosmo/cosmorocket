@@ -1,6 +1,8 @@
 #include "mpu.h"
 
 #include "MPU6050_6Axis_MotionApps20.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 namespace mpu {
 
@@ -12,12 +14,15 @@ unsigned int count = 0;
 Data internal{};
 uint16_t packetSize;
 bool init_success = false;
-
 constexpr uint8_t MPU_CALIBRATION_ITER_CNT = 6;
+constexpr uint8_t MAX_PACKETS_PER_CYCLE = 5;
+
+SemaphoreHandle_t mpu_mutex;
 
 };  // namespace
 
 void init() {
+  mpu_mutex = xSemaphoreCreateMutex();
   mpudev.initialize();
 
   if (!mpudev.testConnection()) {
@@ -41,19 +46,20 @@ void init() {
 
 Data get_data() {
   Data mpu_data{};
+
   if (count == 0) return mpu_data;
 
   mpu_data.acc_max.x = internal.acc_max.x;
   mpu_data.acc_max.y = internal.acc_max.y;
   mpu_data.acc_max.z = internal.acc_max.z;
 
+  mpu_data.gyro_max.x = internal.gyro_max.x,
+  mpu_data.gyro_max.y = internal.gyro_max.y,
+  mpu_data.gyro_max.z = internal.gyro_max.z,
+
   mpu_data.acc_avg.x = internal.acc_avg.x / count,
   mpu_data.acc_avg.y = internal.acc_avg.y / count,
   mpu_data.acc_avg.z = internal.acc_avg.z / count,
-
-  mpu_data.gyro_max.x = internal.gyro_max.x / count,
-  mpu_data.gyro_max.y = internal.gyro_max.y / count,
-  mpu_data.gyro_max.z = internal.gyro_max.z / count,
 
   mpu_data.gyro_avg.x = internal.gyro_avg.x / count,
   mpu_data.gyro_avg.y = internal.gyro_avg.y / count,
@@ -67,9 +73,6 @@ Data get_data() {
   count = 0;
   internal = {};
 
-#ifdef DEBUG
-  print_data(mpu_data);
-#endif
   return mpu_data;
 }
 
@@ -94,49 +97,45 @@ void mpu_task([[maybe_unused]] void *pvParameters) {
   }
 
   for (;;) {
-    vTaskDelay(pdMS_TO_TICKS(100));
-
-    // If MPU power is lost, the sensor resets and deinitializes. We need to
-    // reinitialize it
     if (!mpudev.getDMPEnabled()) {
-      count = 0;  // clear data
-
       Serial.println("Reinitialising MPU");
       mpudev.initialize();
-
-      if (!mpudev.testConnection()) {
-        Serial.println("Connection to mpu failed");
+      if (mpudev.testConnection() && mpudev.dmpInitialize() == 0) {
+        mpudev.setDMPEnabled(true);
+      } else {
+        vTaskDelay(pdMS_TO_TICKS(100));
         continue;
       }
-
-      if (mpudev.dmpInitialize()) {
-        Serial.println("mpu: DMP Initialization failed");
-        continue;
-      }
-      mpudev.setDMPEnabled(true);
     }
+    uint8_t packets_processed = 0;
 
-    if (mpudev.dmpGetCurrentFIFOPacket(FIFOBuffer)) {
+    while (packets_processed < MAX_PACKETS_PER_CYCLE &&
+           mpudev.dmpGetCurrentFIFOPacket(FIFOBuffer)) {
+      packets_processed++;
+
       mpudev.dmpGetQuaternion(&q, FIFOBuffer);
+      mpudev.dmpGetAccel(&iaccel, FIFOBuffer);
+      mpudev.dmpGetGyro(&igyro, FIFOBuffer);
 
-      mpudev.getMotion6(&iaccel.x, &iaccel.y, &iaccel.z, &igyro.x, &igyro.y,
-                        &igyro.z);
+      if (xSemaphoreTake(mpu_mutex, pdMS_TO_TICKS(10))) {
+        process_vectors(internal.acc_max, internal.acc_avg, iaccel);
+        process_vectors(internal.gyro_max, internal.gyro_avg, igyro);
 
-      process_vectors(internal.acc_max, internal.acc_avg, iaccel);
-      process_vectors(internal.gyro_max, internal.gyro_avg, igyro);
+        internal.rot_avg.x += q.x;
+        internal.rot_avg.y += q.y;
+        internal.rot_avg.z += q.z;
+        internal.rot_avg.w += q.w;
 
-      internal.rot_avg.x += q.x;
-      internal.rot_avg.y += q.y;
-      internal.rot_avg.z += q.z;
-      internal.rot_avg.w += q.w;
-
-      count++;
+        count++;
+        xSemaphoreGive(mpu_mutex);
+      } else {
+        Serial.println("Warning: Failed to get MPU mutex in mpu_task()");
+      }
     }
 
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
-
 void print_data(Data &data) {
   Serial.printf(
       "[MPU6050]: \n"

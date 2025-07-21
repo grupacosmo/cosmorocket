@@ -1,9 +1,9 @@
-#ifdef TBEAM
+#include "lora868.h"
+
 #include <LoRa.h>  // https://github.com/sandeepmistry/arduino-LoRa
 #include <SPI.h>
 
 namespace lora {
-
 // We are overwriting the library pins here don't yell at me
 
 #define LORA_SCK 5       // GPIO5 - SX1276 SCK
@@ -13,10 +13,22 @@ namespace lora {
 #define LORA_RST_PIN 14  // GPIO14 - SX1276 RST
 #define LORA_IRQ 26      // GPIO26 - SX1276 IRQ (interrupt request)
 
-constexpr int spreading_factor = 12;  // Ranges from 6-12, default is 7
-constexpr int bandwidth = 125E3;
-constexpr int tx_power = 1;  // Set transmission power (default 1,  flight 22)
+constexpr int spreading_factor = 7;  // Ranges from 6-12, default is 7
+constexpr int bandwidth = 250E3;
+constexpr int tx_power = 2;  // Set transmission power (default 1,  flight 22)
 constexpr int frequency = 868E6;  // Set frequency to 868 MHz
+volatile bool packet_received = false;
+String received_message = "";
+
+void onLoRaReceive(int packetSize) {
+  if (packetSize == 0) return;
+
+  received_message = "";
+  while (LoRa.available()) {
+    received_message += (char)LoRa.read();
+  }
+  packet_received = true;
+}
 
 void init() {
   Serial.print("[SX1262] Initializing ... ");
@@ -30,9 +42,16 @@ void init() {
   LoRa.setSpreadingFactor(spreading_factor);
   LoRa.setTxPower(tx_power, PA_OUTPUT_PA_BOOST_PIN);
   LoRa.setSignalBandwidth(bandwidth);
+  LoRa.onReceive(onLoRaReceive);
+  LoRa.receive();
 
   Serial.println("LoRa initialized successfully.");
 }
+bool is_packet_received() { return packet_received; }
+
+String get_received_message() { return received_message; }
+
+void clear_packet_flag() { packet_received = false; }
 
 void lora_log(const String &message) {
   Serial.println(message);
@@ -44,4 +63,3 @@ void lora_log(const String &message) {
 }
 
 }  // namespace lora
-#endif  // TBEAM

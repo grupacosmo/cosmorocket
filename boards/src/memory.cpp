@@ -20,7 +20,7 @@ File file;
 
 // Define the default initialization function
 void set_defaults(Cfg &config) {
-  config.flight_status = DEV;
+  config.status = DEV;
   config.launch_time = 0;
 
   config.accel_calibration[0] = 0.0f;
@@ -54,7 +54,7 @@ void init() {
   // Load configuration from EEPROM
   load_config();
   // If the configuration is invalid (e.g., uninitialized), set defaults
-  if (config.flight_status == -1) {
+  if (config.status == -1) {
     Serial.println("No valid configuration found. Setting defaults...");
     set_defaults(config);
     save_config();
@@ -83,7 +83,7 @@ void print_debug() {
       "--------- Pressure Cal: %.2f, Launch Alt: %.2f\n"
       "--------- Primary Chute Alt: %d, Secondary Chute Alt: %d\n"
       "--------- Error Code: %d, Last Error: %s\n",
-      config.flight_status, config.launch_time, config.accel_calibration[0],
+      config.status, config.launch_time, config.accel_calibration[0],
       config.accel_calibration[1], config.accel_calibration[2],
       config.gyro_calibration[0], config.gyro_calibration[1],
       config.gyro_calibration[2], config.pressure_calibration,

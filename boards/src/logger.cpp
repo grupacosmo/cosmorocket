@@ -6,31 +6,72 @@ namespace logger {
 namespace {
 char buf[SERIALIZE_PACKET_SIZE];
 
-// clang-format off
-int serialize_data(char *buf, size_t len, const Packet &packet) {
-  static u_int16_t n = 0;
-  n++;
-  return snprintf(
-      buf, len,
-      "%u,%u,%u,%u,%u,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f",
-      n, packet.gps_data.time.hours, packet.gps_data.time.minutes, 
-      packet.gps_data.time.seconds, packet.status,
-      packet.bmp_data.temperature, packet.bmp_data.pressure, packet.bmp_data.altitude,
-      packet.mpu_data.acc_max.x, packet.mpu_data.acc_max.y, packet.mpu_data.acc_max.z,
-      packet.mpu_data.acc_avg.x, packet.mpu_data.acc_avg.y, packet.mpu_data.acc_avg.z,
-      packet.mpu_data.gyro_max.x, packet.mpu_data.gyro_max.y, packet.mpu_data.gyro_max.z,
-      packet.mpu_data.gyro_avg.x, packet.mpu_data.gyro_avg.y, packet.mpu_data.gyro_avg.z,
-      packet.mpu_data.rot_avg.x, packet.mpu_data.rot_avg.y, packet.mpu_data.rot_avg.z, packet.mpu_data.rot_avg.w,
-      packet.gps_data.lat, packet.gps_data.lng);
+bool check_write(int written, int remaining_len) {
+  if (written < 0) {
+    return false;
+  }
+  if (written >= remaining_len) {
+    return false;
+  }
+  return true;
 }
-// clang-format on
+
 }  // namespace
 
 const char *serialize(Packet &packet) {
-  if (!serialize_data(&buf[0], SERIALIZE_PACKET_SIZE, packet)) {
-    Serial.println("Failed to serialize data, check buffer size");
-    serialize_data(&buf[0], SERIALIZE_PACKET_SIZE, Packet{});
-  }
+  static uint16_t n = 0;
+  n++;
+
+  int offset = 0;
+  int remaining_len = SERIALIZE_PACKET_SIZE;
+  int written = 0;
+
+  written = snprintf(buf + offset, remaining_len, "%u,%u,%u,%u,%u,", n,
+                     packet.gps_data.time.hours, packet.gps_data.time.minutes,
+                     packet.gps_data.time.seconds, packet.status);
+
+  if (!check_write(written, remaining_len)) return buf;
+  offset += written;
+  remaining_len -= written;
+
+  written = snprintf(buf + offset, remaining_len, "%.4f,%.4f,%.4f,",
+                     packet.bmp_data.temperature, packet.bmp_data.pressure,
+                     packet.bmp_data.altitude);
+
+  if (!check_write(written, remaining_len)) return buf;
+  offset += written;
+  remaining_len -= written;
+
+  written = snprintf(buf + offset, remaining_len, "%d,%d,%d,%d,%d,%d,",
+                     packet.mpu_data.acc_max.x, packet.mpu_data.acc_max.y,
+                     packet.mpu_data.acc_max.z, packet.mpu_data.acc_avg.x,
+                     packet.mpu_data.acc_avg.y, packet.mpu_data.acc_avg.z);
+
+  if (!check_write(written, remaining_len)) return buf;
+  offset += written;
+  remaining_len -= written;
+
+  written = snprintf(buf + offset, remaining_len, "%d,%d,%d,%d,%d,%d,",
+                     packet.mpu_data.gyro_max.x, packet.mpu_data.gyro_max.y,
+                     packet.mpu_data.gyro_max.z, packet.mpu_data.gyro_avg.x,
+                     packet.mpu_data.gyro_avg.y, packet.mpu_data.gyro_avg.z);
+
+  if (!check_write(written, remaining_len)) return buf;
+  offset += written;
+  remaining_len -= written;
+
+  written = snprintf(buf + offset, remaining_len, "%.4f,%.4f,%.4f,%.4f,",
+                     packet.mpu_data.rot_avg.x, packet.mpu_data.rot_avg.y,
+                     packet.mpu_data.rot_avg.z, packet.mpu_data.rot_avg.w);
+
+  if (!check_write(written, remaining_len)) return buf;
+  offset += written;
+  remaining_len -= written;
+
+  written = snprintf(buf + offset, remaining_len, "%.4f,%.4f",
+                     packet.gps_data.lat, packet.gps_data.lng);
+
+  if (!check_write(written, remaining_len)) return buf;
 
   return buf;
 }
