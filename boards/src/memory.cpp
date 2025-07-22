@@ -37,8 +37,13 @@ Cfg read_cfg_file() {
 void write_cfg_file(const Cfg &cfg) {
   File cfg_file = SPIFFS.open("/cfg", "w");
 
+  if (!cfg_file) {
+    Serial.println("Failed to open config file for writing");
+    return;
+  }
+
   size_t written = cfg_file.write((uint8_t *)&cfg, sizeof(Cfg));
-  if (written != 1) {
+  if (written != sizeof(Cfg)) {
     Serial.println("Failed to write config file");
   }
   cfg_file.close();
