@@ -51,7 +51,7 @@ void main_task_loop(void *pvParameters) {
     flight_controller(packet);
     if (memory::config.status != memory::DEV) {
       String message = logger::serialize(packet);
-      lora::lora_log(message);  // This will now switch LoRa to transmit mode
+      lora::lora_log(message);
       memory::save_data(message);
     }
     vTaskDelay(pdMS_TO_TICKS(2));
@@ -73,13 +73,14 @@ void flight_controller(const logger::Packet &packet) {
           Serial.println("Launch command received!");
           memory::config.launch_altitude = packet.bmp_data.altitude;
           memory::config.status = memory::PRE_LAUNCH;
+          memory::write_cfg_file(memory::config);
         }
       }
       break;
     case memory::PRE_LAUNCH:
       if (rel_alt > 5.0) {
         memory::config.status = memory::ASCENT;
-        // Maybe change this to magsaafe detected launch lol
+        memory::write_cfg_file(memory::config);
       }
       break;
 
@@ -100,6 +101,7 @@ void flight_controller(const logger::Packet &packet) {
         ignition::fire(1);
 
         memory::config.status = memory::DESCENT_PRIMARY;
+        memory::write_cfg_file(memory::config);
       }
       break;
 
@@ -114,6 +116,7 @@ void flight_controller(const logger::Packet &packet) {
 
       if (landing_counter > 50) {
         memory::config.status = memory::RECOVERY;
+        memory::write_cfg_file(memory::config);
       }
       break;
     case memory::RECOVERY:
