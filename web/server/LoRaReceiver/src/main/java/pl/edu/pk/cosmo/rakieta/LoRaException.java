@@ -8,13 +8,13 @@ public class LoRaException extends RuntimeException {
 
     }
 
-    LoRaException(String message, Throwable cause) {
+    public LoRaException(String message, Throwable cause) {
 
         super(message, cause);
 
     }
 
-    LoRaException(Throwable cause) {
+    public LoRaException(Throwable cause) {
 
         super(cause);
 
