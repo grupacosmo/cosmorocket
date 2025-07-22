@@ -1,6 +1,6 @@
-let data = {};
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
+  get,
   getDatabase,
   limitToLast,
   query,
@@ -26,9 +26,16 @@ export const db = getDatabase(app);
 
 const dbRef = ref(db);
 
+const entryLimit = 80;
+
 let tempChart = null;
 let pressureChart = null;
 let altitudeChart = null;
+
+let data = {};
+let lastN = 0;
+const polylineData = [];
+let polyline;
 
 function cloneObject(object) {
   return JSON.parse(JSON.stringify(object));
@@ -81,6 +88,18 @@ const defaultData = {
   status: 0,
 };
 
+function pushToArrayAndTrim(array, data) {
+  array.push(data);
+  if (array.length > entryLimit) {
+    array.splice(0, 1);
+  }
+}
+
+function pushPolylineData(lat, lng) {
+  pushToArrayAndTrim(polylineData, [lat, lng]);
+  polyline.setLatLngs(polylineData);
+}
+
 function backfillRoot(incomingData, key) {
   if (!(key in incomingData)) {
     data[key] = defaultData[key];
@@ -121,29 +140,32 @@ function setData(incomingData) {
     backfillComponent(incomingData, "mpu", "gyroscopeMax");
     backfillComponent(incomingData, "mpu", "rotationAverage");
 
-    pushChartData(tempChart, data.bmp.temperature);
-    pushChartData(pressureChart, data.bmp.pressure);
-    pushChartData(altitudeChart, data.bmp.altitude);
+    const time = data.gps.time;
+
+    pushChartData(tempChart, data.bmp.temperature, time);
+    pushChartData(pressureChart, data.bmp.pressure, time);
+    pushChartData(altitudeChart, data.bmp.altitude, time);
+
+    pushPolylineData(data.gps.latitude, data.gps.longitude);
   } catch (err) {
     data = cloneObject(defaultData);
     console.log("error", err);
   }
 }
 
-function pushChartData(chart, data) {
-  chart.data.labels.push(formatDate());
+function pushChartData(chart, data, time) {
+  pushToArrayAndTrim(
+    chart.data.labels,
+    formatDate(time.hours, time.minutes, time.seconds),
+  );
   chart.data.datasets.forEach((dataset) => {
-    dataset.data.push(data);
-    if (dataset.data.length > 50) {
-      dataset.data.splice(0, 1);
-    }
+    pushToArrayAndTrim(dataset.data, data);
   });
   chart.update();
 }
 
-function formatDate() {
-  const date = new Date();
-  return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
+function formatDate(hours = 0, minutes = 0, seconds = 0) {
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function initChart(handle, name, color) {
@@ -151,7 +173,7 @@ function initChart(handle, name, color) {
   return new Chart(ctx, {
     type: "line",
     data: {
-      labels: [formatDate()],
+      labels: [],
       datasets: [
         {
           label: name,
@@ -174,11 +196,30 @@ function initCharts() {
   altitudeChart = initChart("altitude", "Altitude", { r: 192, g: 192, b: 79 });
 }
 
+async function retrieveHistoricalSnapshots(loraRef) {
+  const historicalData = Object.values((await get(loraRef)).val())[0];
+  const historicalSnapshots = Object.values(historicalData);
+  return historicalSnapshots;
+}
+
+async function retrieveLatestSnapshot(loraRef) {
+  const snapshots = await retrieveHistoricalSnapshots(loraRef);
+  const latestSnapshot = snapshots[snapshots.length - 1];
+  return latestSnapshot;
+}
+
 async function init() {
   initCharts();
-  setData(defaultData);
-
-  const map = L.map("map").setView([data.gps.latitude, data.gps.longitude], 13);
+  const loraRef = query(dbRef, limitToLast(1));
+  let initialCoordinates = [50.0647, 19.945];
+  {
+    const latestSnapshot = await retrieveLatestSnapshot(loraRef);
+    initialCoordinates = [
+      latestSnapshot.gps.latitude ?? initialCoordinates[0],
+      latestSnapshot.gps.longitude ?? initialCoordinates[1],
+    ];
+  }
+  const map = L.map("map").setView(initialCoordinates, 13);
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -186,21 +227,41 @@ async function init() {
       '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
 
-  const marker = L.marker([data.gps.latitude, data.gps.longitude]).addTo(map);
+  const marker = L.marker(initialCoordinates).addTo(map);
+  polyline = new L.Polyline([], {
+    color: "red",
+    weight: 3,
+    opacity: 0.5,
+    smoothFactor: 1,
+  }).addTo(map);
+
+  {
+    const historicalSnapshots = await retrieveHistoricalSnapshots(loraRef);
+    const skipCount = 4; // snapshots are apparently taken 4 times a second
+    for (let i = 0; i < historicalSnapshots.length; i += skipCount) {
+      const snapshot = historicalSnapshots[i];
+      setData(snapshot);
+    }
+  }
 
   function setMarkerLocation(lat, lng) {
     const newLoc = new L.LatLng(lat, lng);
     marker.setLatLng(newLoc);
   }
 
-  const loraRef = query(dbRef, limitToLast(1));
-  onValue(loraRef, async (snapshot) => {
-    const latestSnapshots = Object.values(snapshot.val())[0];
-    const snapshots = Object.values(latestSnapshots);
+  onValue(loraRef, (snapshot) => {
+    const latestData = Object.values(snapshot.val())[0];
+    const snapshots = Object.values(latestData);
     const data = snapshots[snapshots.length - 1];
-    setData(data);
-    map.flyTo([data.gps.latitude, data.gps.longitude], 14);
-    setMarkerLocation(data.gps.latitude, data.gps.longitude);
+    if (data.n) {
+      if (data.n == lastN) {
+        return;
+      }
+      setData(data);
+      map.flyTo([data.gps.latitude, data.gps.longitude], 14);
+      setMarkerLocation(data.gps.latitude, data.gps.longitude);
+      lastN = data.n;
+    }
   });
 }
 
