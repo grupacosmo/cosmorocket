@@ -14,65 +14,44 @@ namespace {
 
 constexpr uint8_t config_addr = 0;           // Address in EEPROM
 constexpr size_t memory_size = sizeof(Cfg);  // EEPROM size
-File file;
+File log_file;
+
+Cfg read_cfg_file() {
+  Cfg cfg;
+  File cfg_file = SPIFFS.open("/cfg", "r");
+  if (!cfg_file) {
+    Serial.println("Failed to open config file");
+    return Cfg();
+  }
+  size_t read = cfg_file.read((uint8_t *)&cfg, sizeof(Cfg));
+  if (read != sizeof(Cfg)) {
+    Serial.println("Failed to read config file");
+    return Cfg();
+  }
+  cfg_file.close();
+  return cfg;
+}
 
 }  // namespace
 
-// Define the default initialization function
-void set_defaults(Cfg &config) {
-  config.status = DEV;
-  config.launch_time = 0;
-
-  config.accel_calibration[0] = 0.0f;
-  config.accel_calibration[1] = 0.0f;
-  config.accel_calibration[2] = 0.0f;
-
-  config.gyro_calibration[0] = 0.0f;
-  config.gyro_calibration[1] = 0.0f;
-  config.gyro_calibration[2] = 0.0f;
-
-  config.pressure_calibration = 0.0f;
-
-  config.launch_altitude = 0.0f;
-
-  config.first_parachute_height_log = 500;
-  config.second_parachute_target = 200;
-
-  config.error_code = error_code_t::NO_ERROR;
-  strcpy(config.last_error, "No errors");
-}
-
 void init() {
-  EEPROM.begin(memory_size);
-  if (memory_size > EEPROM.length()) {
-    Serial.printf("ERROR Config size: %d, EEPROM size: %d\n", memory_size,
-                  EEPROM.length());
-
-    for (;;);
-  }
-
-  // Load configuration from EEPROM
-  load_config();
-  // If the configuration is invalid (e.g., uninitialized), set defaults
-  if (config.status == -1) {
-    Serial.println("No valid configuration found. Setting defaults...");
-    set_defaults(config);
-    save_config();
-  }
   SPIFFS.begin(true);
-  file = SPIFFS.open("/data.log", "a");
-  if (!file) {
+  config = read_cfg_file();
+  log_file = SPIFFS.open("/data.log", "a");
+  if (!log_file) {
     Serial.println("Failed to open file for writing");
-    for (;;);
   }
 }
 
-void save_config() {
-  EEPROM.put(config_addr, config);
-  EEPROM.commit();
-}
+void write_cfg_file(const Cfg &cfg) {
+  File cfg_file = SPIFFS.open("/cfg", "w");
 
-void load_config() { EEPROM.get(config_addr, config); }
+  size_t written = cfg_file.write((uint8_t *)&cfg, sizeof(Cfg));
+  if (written != 1) {
+    Serial.println("Failed to write config file");
+  }
+  cfg_file.close();
+}
 
 void print_debug() {
   Serial.printf(
@@ -81,16 +60,14 @@ void print_debug() {
       "--------- Accel Cal: [%.2f, %.2f, %.2f]\n"
       "--------- Gyro Cal: [%.2f, %.2f, %.2f]\n"
       "--------- Pressure Cal: %.2f, Launch Alt: %.2f\n"
-      "--------- Primary Chute Alt: %d, Secondary Chute Alt: %d\n"
-      "--------- Error Code: %d, Last Error: %s\n",
+      "--------- Primary Chute Alt: %d",
       config.status, config.launch_time, config.accel_calibration[0],
       config.accel_calibration[1], config.accel_calibration[2],
       config.gyro_calibration[0], config.gyro_calibration[1],
       config.gyro_calibration[2], config.pressure_calibration,
-      config.launch_altitude, config.first_parachute_height_log,
-      config.second_parachute_target, config.error_code, config.last_error);
+      config.launch_altitude, config.first_parachute_height_log);
 }
 
-void save_data(String &log) { file.println(log); }
+void save_data(String &log) { log_file.println(log); }
 
 }  // namespace memory
