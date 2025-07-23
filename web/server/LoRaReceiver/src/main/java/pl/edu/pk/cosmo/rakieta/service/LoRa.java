@@ -150,7 +150,7 @@ public class LoRa implements Closeable {
 
         sendCommandAndWait("AT+MODE=TEST", "+MODE: TEST", msg);
 
-        sendCommandAndWait("AT+TEST=RFCFG,868,SF12,125,12,15,14,ON,OFF,OFF", "+TEST", msg);
+        sendCommandAndWait("AT+TEST=RFCFG,868,SF7,250,12,15,14,ON,OFF,OFF", "+TEST", msg);
 
         sendCommandAndWait("AT+TEST=RXLRPKT", "+TEST", msg);
 

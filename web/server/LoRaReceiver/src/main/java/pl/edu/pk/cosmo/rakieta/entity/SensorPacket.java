@@ -23,14 +23,21 @@ public class SensorPacket {
 
     public static final CsvSchema SCHEMA = CsvSchema.builder().addColumns(
         List.of(
-            "n", "hours", "minutes", "seconds", "status",
-            "temperature", "pressure", "altitude",
-            "acceleration_max_x", "acceleration_max_y", "acceleration_max_z",
-            "acceleration_average_x", "acceleration_average_y", "acceleration_average_z",
-            "gyroscope_max_x", "gyroscope_max_y", "gyroscope_max_z",
-            "gyroscope_average_x", "gyroscope_average_y", "gyroscope_average_z",
-            "rotation_average_x", "rotation_average_y", "rotation_average_z", "rotation_average_w",
-            "latitude", "longitude"
+            "n",
+                "hours", "minutes", "seconds",
+                "status",
+
+                "temperature", "pressure", "altitude",
+
+                "acceleration_max_x", "acceleration_max_y", "acceleration_max_z",
+                "acceleration_average_x", "acceleration_average_y", "acceleration_average_z",
+
+                "gyroscope_max_x", "gyroscope_max_y", "gyroscope_max_z",
+                "gyroscope_average_x", "gyroscope_average_y", "gyroscope_average_z",
+
+                "rotation_average_x", "rotation_average_y", "rotation_average_z", "rotation_average_w",
+
+                "latitude", "longitude"
         ), ColumnType.NUMBER_OR_STRING
     ).build();
 
