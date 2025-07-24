@@ -26,20 +26,54 @@ export const db = getDatabase(app);
 
 const dbRef = ref(db);
 
-const entryLimit = 80;
+Chart.defaults.font.family = "Geist Mono";
+
+const entryLimit = 160;
+const flyToCurrentPositionOnUpdate = false;
 
 let tempChart = null;
 let pressureChart = null;
 let altitudeChart = null;
+
+let statusText = document.querySelector("#status");
+let latitudeText = document.querySelector("#latitude");
+let longitudeText = document.querySelector("#longitude");
+let timeText = document.querySelector("#time");
 
 let data = {};
 let lastN = 0;
 const polylineData = [];
 let polyline;
 
+function isPresent(value) {
+  return value !== null && value !== undefined;
+}
+
 function cloneObject(object) {
   return JSON.parse(JSON.stringify(object));
 }
+
+const RocketStatus = {
+  Dev: 0,
+  Idle: 1,
+  PreLaunch: 2,
+  Climbing: 3,
+  Apogee: 4,
+  DescentPrimary: 5,
+  Recovery: 6,
+  Error: 99,
+};
+
+const rocketStatusToText = {
+  [RocketStatus.Dev]: "dev",
+  [RocketStatus.Idle]: "idle/testing",
+  [RocketStatus.PreLaunch]: "pre-launch",
+  [RocketStatus.Climbing]: "climbing",
+  [RocketStatus.Apogee]: "at apogee",
+  [RocketStatus.DescentPrimary]: "descending",
+  [RocketStatus.Recovery]: "landed",
+  [RocketStatus.Error]: "error",
+};
 
 const defaultData = {
   bmp: {
@@ -88,9 +122,9 @@ const defaultData = {
   status: 0,
 };
 
-function pushToArrayAndTrim(array, data) {
+function pushToArrayAndTrim(array, data, limit = entryLimit) {
   array.push(data);
-  if (array.length > entryLimit) {
+  if (array.length > limit) {
     array.splice(0, 1);
   }
 }
@@ -110,6 +144,22 @@ function backfillComponent(incomingData, component, key) {
   if (!(key in incomingData[component])) {
     data[component][key] = defaultData[component][key];
   }
+}
+
+function pushChartData(chart, data, time, limit = entryLimit) {
+  pushToArrayAndTrim(
+    chart.data.labels,
+    formatDate(time.hours, time.minutes, time.seconds),
+    limit,
+  );
+  chart.data.datasets.forEach((dataset) => {
+    pushToArrayAndTrim(dataset.data, data, limit);
+  });
+  chart.update("none");
+}
+
+function formatDate(hours = 0, minutes = 0, seconds = 0) {
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function setData(incomingData) {
@@ -147,25 +197,15 @@ function setData(incomingData) {
     pushChartData(altitudeChart, data.bmp.altitude, time);
 
     pushPolylineData(data.gps.latitude, data.gps.longitude);
+
+    statusText.innerText = `Status: ${rocketStatusToText[data.status]}`;
+    latitudeText.innerText = `Latitude: ${data.gps.latitude}`;
+    longitudeText.innerText = `Longitude: ${data.gps.longitude}`;
+    timeText.innerText = `Time: ${formatDate(time.hours, time.minutes, time.seconds)}`;
   } catch (err) {
     data = cloneObject(defaultData);
     console.log("error", err);
   }
-}
-
-function pushChartData(chart, data, time) {
-  pushToArrayAndTrim(
-    chart.data.labels,
-    formatDate(time.hours, time.minutes, time.seconds),
-  );
-  chart.data.datasets.forEach((dataset) => {
-    pushToArrayAndTrim(dataset.data, data);
-  });
-  chart.update();
-}
-
-function formatDate(hours = 0, minutes = 0, seconds = 0) {
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function initChart(handle, name, color) {
@@ -189,6 +229,12 @@ function initChart(handle, name, color) {
     },
   });
 }
+
+window.addEventListener("resize", () => {
+  tempChart.resize();
+  pressureChart.resize();
+  altitudeChart.resize();
+});
 
 function initCharts() {
   tempChart = initChart("temp", "Temperature", { r: 79, g: 192, b: 192 });
@@ -237,7 +283,7 @@ async function init() {
 
   {
     const historicalSnapshots = await retrieveHistoricalSnapshots(loraRef);
-    const skipCount = 4; // snapshots are apparently taken 4 times a second
+    const skipCount = Math.floor(historicalSnapshots.length / entryLimit);
     for (let i = 0; i < historicalSnapshots.length; i += skipCount) {
       const snapshot = historicalSnapshots[i];
       setData(snapshot);
@@ -249,18 +295,29 @@ async function init() {
     marker.setLatLng(newLoc);
   }
 
+  function updateApp(data) {
+    setData(data);
+    if (flyToCurrentPositionOnUpdate) {
+      map.flyTo([data.gps.latitude, data.gps.longitude], 14);
+    }
+    setMarkerLocation(data.gps.latitude, data.gps.longitude);
+  }
+
   onValue(loraRef, (snapshot) => {
     const latestData = Object.values(snapshot.val())[0];
     const snapshots = Object.values(latestData);
-    const data = snapshots[snapshots.length - 1];
-    if (data.n) {
-      if (data.n == lastN) {
+    const latestDataEntry = snapshots[snapshots.length - 1];
+    if (latestDataEntry.n) {
+      if (latestDataEntry.n == lastN) {
         return;
       }
-      setData(data);
-      map.flyTo([data.gps.latitude, data.gps.longitude], 14);
-      setMarkerLocation(data.gps.latitude, data.gps.longitude);
-      lastN = data.n;
+      if (
+        isPresent(latestDataEntry.gps.longitude) &&
+        isPresent(latestDataEntry.gps.latitude)
+      ) {
+        updateApp(latestDataEntry);
+      }
+      lastN = latestDataEntry.n;
     }
   });
 }
