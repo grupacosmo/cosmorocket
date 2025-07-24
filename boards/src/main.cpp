@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <cstdint>
 
 #include "bmp.h"
 #include "board_config.h"
@@ -66,6 +67,7 @@ void main_task_loop(void *pvParameters) {
 // First draft of the flight controller logic
 void flight_controller(const logger::Packet &packet) {
   static float last_altitude = 0.0;
+  static uint64_t launch_time = 0;
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
 
   switch (memory::config.status) {
@@ -80,6 +82,7 @@ void flight_controller(const logger::Packet &packet) {
           memory::config.status = memory::PRE_LAUNCH;
           camera::camera_start(120000);
           memory::write_cfg_file(memory::config);
+          launch_time = esp_timer_get_time();
         }
       }
       // alternative way to switch to PRE_LAUNCH mode using builtin button
@@ -102,6 +105,11 @@ void flight_controller(const logger::Packet &packet) {
 
     case memory::ASCENT:
       static int apogee_counter = 0;
+
+      if (packet.bmp_data.altitude == 0.0f) {
+        if (esp_timer_get_time() - launch_time > 20000000LL)
+          apogee_counter = 5;
+      }
 
       if (rel_alt < last_altitude) {
         apogee_counter++;
