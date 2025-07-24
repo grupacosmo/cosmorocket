@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include <cstdint>
+
 #include "bmp.h"
 #include "board_config.h"
 #include "camera.h"
@@ -32,7 +34,7 @@ void setup() {
   mpu::init();
   ignition::init();
   lora::init();
-  camera::init();
+  // camera::init();
 
   // Pin mpu_task to core 0
   xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", 64000, nullptr, 1, nullptr, 0);
@@ -53,6 +55,7 @@ void main_task_loop(void *pvParameters) {
     packet.bmp_data = bmp::get_data();
     packet.mpu_data = mpu::get_data();
     packet.gps_data = gps::get_data();
+    packet.status = static_cast<int>(memory::config.status);
     flight_controller(packet);
     if (memory::config.status != memory::DEV) {
       String message = logger::serialize(packet);
@@ -66,7 +69,15 @@ void main_task_loop(void *pvParameters) {
 // First draft of the flight controller logic
 void flight_controller(const logger::Packet &packet) {
   static float last_altitude = 0.0;
+  static uint64_t launch_time = 0;
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
+
+  if (digitalRead(BUTTON) == LOW && memory::config.status != memory::DEV) {
+    Serial.println("Button pressed, switching to DEV mode.");
+    memory::config.status = memory::DEV;
+    memory::write_cfg_file(memory::config);
+    vTaskDelay(pdMS_TO_TICKS(1000));  // Debounce delay
+  }
 
   switch (memory::config.status) {
     case memory::DEV:
@@ -78,8 +89,9 @@ void flight_controller(const logger::Packet &packet) {
           Serial.println("Launch command received!");
           memory::config.launch_altitude = packet.bmp_data.altitude;
           memory::config.status = memory::PRE_LAUNCH;
-          camera::camera_start(120000);
+          // camera::camera_start(120000);
           memory::write_cfg_file(memory::config);
+          launch_time = esp_timer_get_time();
         }
       }
       // alternative way to switch to PRE_LAUNCH mode using builtin button
@@ -87,7 +99,7 @@ void flight_controller(const logger::Packet &packet) {
         Serial.println("Button pressed, switching to PRE_LAUNCH mode.");
         memory::config.launch_altitude = packet.bmp_data.altitude;
         memory::config.status = memory::PRE_LAUNCH;
-        camera::camera_start(120000);
+        // camera::camera_start(120000);
         memory::write_cfg_file(memory::config);
 
         vTaskDelay(pdMS_TO_TICKS(1000));  // Debounce delay
@@ -102,6 +114,14 @@ void flight_controller(const logger::Packet &packet) {
 
     case memory::ASCENT:
       static int apogee_counter = 0;
+
+      if (packet.bmp_data.altitude == 0.0f) {
+        Serial.println(
+            "Warning: Altitude data is zero, skipping apogee detection.");
+        if (esp_timer_get_time() - launch_time > 20000000LL) {
+          apogee_counter = 5;
+        }
+      }
 
       if (rel_alt < last_altitude) {
         apogee_counter++;
