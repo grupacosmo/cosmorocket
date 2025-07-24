@@ -2,8 +2,6 @@
 namespace camera {
 
 void init();
-void test();
-void start_camera();
-void stop_camera();
+void camera_start(int delay_ms);
 
 }  // namespace camera

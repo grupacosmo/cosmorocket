@@ -36,8 +36,6 @@ void setup() {
   lora::init();
   camera::init();
 
-  camera::test();
-
   // Pin mpu_task to core 0
   xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", 64000, nullptr, 1, nullptr, 0);
   xTaskCreatePinnedToCore(gps::gps_task, "gps", 64000, nullptr, 1, nullptr, 0);
@@ -82,6 +80,7 @@ void flight_controller(const logger::Packet &packet) {
           Serial.println("Launch command received!");
           memory::config.launch_altitude = packet.bmp_data.altitude;
           memory::config.status = memory::PRE_LAUNCH;
+          camera::camera_start(120000);
           memory::write_cfg_file(memory::config);
         }
       }
@@ -90,12 +89,13 @@ void flight_controller(const logger::Packet &packet) {
         Serial.println("Button pressed, switching to PRE_LAUNCH mode.");
         memory::config.launch_altitude = packet.bmp_data.altitude;
         memory::config.status = memory::PRE_LAUNCH;
+        camera::camera_start(120000);
         memory::write_cfg_file(memory::config);
+
         vTaskDelay(pdMS_TO_TICKS(1000));  // Debounce delay
       }
       break;
     case memory::PRE_LAUNCH:
-      camera::start_camera();
       if (rel_alt > 5.0) {
         memory::config.status = memory::ASCENT;
         memory::write_cfg_file(memory::config);
@@ -139,7 +139,7 @@ void flight_controller(const logger::Packet &packet) {
       break;
 
     case memory::RECOVERY:
-      camera::stop_camera();
+      digitalWrite(P1_CAMERA, LOW);
       break;
 
     default:
