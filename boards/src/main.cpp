@@ -119,7 +119,7 @@ void flight_controller(const logger::Packet &packet) {
             static_cast<int>(last_altitude);
 
         vTaskDelay(pdMS_TO_TICKS(100));
-        ignition::fire(PT2_PARACHUTE);  // Fire the parachute
+        ignition::fire(P2_PARACHUTE);  // Fire the parachute
 
         memory::config.status = memory::DESCENT_PRIMARY;
         memory::write_cfg_file(memory::config);
