@@ -3,6 +3,7 @@
 
 #include "bmp.h"
 #include "board_config.h"
+#include "camera.h"
 #include "gps.h"
 #include "ignition.h"
 #include "logger.h"
@@ -19,7 +20,6 @@
 
 void flight_controller(const logger::Packet &packet);
 void main_task_loop(void *pvParameters);
-void cam_task(void *pvParameters);
 
 void setup() {
   Wire.begin(SDA_PIN, SCL_PIN);
@@ -34,6 +34,9 @@ void setup() {
   mpu::init();
   ignition::init();
   lora::init();
+  camera::init();
+
+  camera::test();
 
   // Pin mpu_task to core 0
   xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", 64000, nullptr, 1, nullptr, 0);
@@ -92,13 +95,7 @@ void flight_controller(const logger::Packet &packet) {
       }
       break;
     case memory::PRE_LAUNCH:
-      if (ignition::camPtr == nullptr) {
-        ignition::duration = 120000;
-        xTaskCreatePinnedToCore(ignition::cam_task, "cam", 1024, nullptr, 1,
-                                &ignition::camPtr, 1);
-        Serial.println("[Camera Task] Task started.");
-      }
-
+      camera::start_camera();
       if (rel_alt > 5.0) {
         memory::config.status = memory::ASCENT;
         memory::write_cfg_file(memory::config);
@@ -142,7 +139,7 @@ void flight_controller(const logger::Packet &packet) {
       break;
 
     case memory::RECOVERY:
-      digitalWrite(P1_CAMERA, LOW);
+      camera::stop_camera();
       break;
 
     default:
