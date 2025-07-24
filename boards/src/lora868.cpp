@@ -55,7 +55,7 @@ String get_received_message() { return received_message; }
 void clear_packet_flag() { packet_received = false; }
 
 void lora_log(const String &message) {
-  // Serial.println(message);
+  Serial.println(message);
   LoRa.beginPacket();
   LoRa.print(message);
   if (LoRa.endPacket() == 0) {

@@ -16,8 +16,6 @@
 #include "lora-uart.h"
 #endif
 
-// TaskHandle_t camPtr = nullptr;
-
 void flight_controller(const logger::Packet &packet);
 void main_task_loop(void *pvParameters);
 
@@ -54,7 +52,7 @@ void main_task_loop(void *pvParameters) {
   while (true) {
     packet.bmp_data = bmp::get_data();
     packet.mpu_data = mpu::get_data();
-    // packet.gps_data = gps::get_data();
+    packet.gps_data = gps::get_data();
     flight_controller(packet);
     if (memory::config.status != memory::DEV) {
       String message = logger::serialize(packet);
