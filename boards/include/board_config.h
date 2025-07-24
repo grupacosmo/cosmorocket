@@ -12,8 +12,10 @@ constexpr int8_t SD_SS = 33;
 constexpr uint8_t SDA_PIN = 21;
 constexpr uint8_t SCL_PIN = 22;
 
-constexpr uint8_t P1 = 25;
-constexpr uint8_t P2 = 13;
+constexpr uint8_t BUTTON = 38;  // builtin button on T-BEAM
+
+constexpr uint8_t P1_CAMERA = 25;
+constexpr uint8_t P2_PARACHUTE = 13;
 constexpr uint8_t P3 = 2;
 constexpr uint8_t PT1 = 33;
 constexpr uint8_t PT2 = 4;

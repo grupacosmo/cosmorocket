@@ -15,8 +15,9 @@ namespace lora {
 
 constexpr int spreading_factor = 7;  // Ranges from 6-12, default is 7
 constexpr int bandwidth = 250E3;
-constexpr int tx_power = 2;  // Set transmission power (default 1,  flight 22)
-constexpr int frequency = 868E6;  // Set frequency to 868 MHz
+constexpr int tx_power = 2;  // SET POWER TO 22 BEFORE LAUNCH
+// CHANGE FREQUENCY BEFORE LAUNCH PROBABLY TO 866,7 MHz !!!!
+constexpr int frequency = 868E6;
 volatile bool packet_received = false;
 String received_message = "";
 
