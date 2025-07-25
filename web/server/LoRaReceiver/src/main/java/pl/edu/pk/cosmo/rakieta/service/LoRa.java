@@ -16,7 +16,7 @@ import pl.edu.pk.cosmo.rakieta.LoRaException;
 
 public class LoRa implements Closeable {
 
-    public static final int LORA_BOUND_RATE = 9600;
+    public static final int LORA_BOUND_RATE = 115200;
     private BufferedReader serialInput;
     private OutputStreamWriter serialOutput;
     private SerialPort port;
@@ -86,7 +86,8 @@ public class LoRa implements Closeable {
         serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
         serialPort.setParity(SerialPort.NO_PARITY);
         serialPort.setBaudRate(LORA_BOUND_RATE);
-        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_SCANNER, 0, 0);
+//        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 100000, 100000);
+        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
 
     }
 
@@ -150,7 +151,7 @@ public class LoRa implements Closeable {
 
         sendCommandAndWait("AT+MODE=TEST", "+MODE: TEST", msg);
 
-        sendCommandAndWait("AT+TEST=RFCFG,868,SF7,250,12,15,14,ON,OFF,OFF", "+TEST", msg);
+        sendCommandAndWait("AT+TEST=RFCFG,866.7,SF7,250,12,15,14,ON,OFF,OFF", "+TEST", msg);
 
         sendCommandAndWait("AT+TEST=RXLRPKT", "+TEST", msg);
 

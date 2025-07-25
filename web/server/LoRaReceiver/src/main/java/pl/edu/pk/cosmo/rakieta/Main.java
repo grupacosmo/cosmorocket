@@ -108,31 +108,44 @@ public class Main implements Runnable {
 
         while(scanner.hasNextLine()) {
 
-            String line = scanner.nextLine();
-            System.out.println(line);
-            mainReceiver.getLora().closeSerialInput();
-            mainReceiver.interrupt();
-            mainReceiver.getLora().openSerialInput();
-            mainReceiver.start();
-            System.out.println("restarted");
+            String line = scanner.nextLine().trim();
+            if (line.isEmpty()) continue;
+            System.out.println("Console input: " + line);
+            if (line.equals("_ CLOSE RECEIVER")) {
+                System.out.println("Graceful shutdown...");
+
+                receivers.forEach(receiver -> {
+                    receiver.interrupt();
+                    try {
+                        receiver.getLora().close();
+                    }catch(IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+                break;
+            }
+            else {
+                System.out.println("unknown command");
+            }
+//            mainReceiver.getLora().closeSerialInput();
+//            mainReceiver.interrupt();
+//            mainReceiver.getLora().openSerialInput();
+//            mainReceiver.start();
+//            System.out.println("restarted");
 
         }
 
+        System.out.println("Exiting LoRaReceiver... (joining threads)");
         receivers.forEach(receiver -> {
-
             try {
-
                 receiver.join();
-
             } catch(InterruptedException e) {
-
-                receiver.interrupt();
+                if (Thread.interrupted()) {
+                    receivers.forEach(Thread::stop);
+                }
                 e.printStackTrace();
-
             }
-
         });
-
     }
 
     public static void main(String[] args) {

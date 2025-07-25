@@ -62,17 +62,17 @@ public class SensorPacket {
     public static class MPU {
 
         @JsonUnwrapped(prefix = "acceleration_max_")
-        private Vector3<Integer> accelerationMax;
+        private Vector3<Double> accelerationMax;
         @JsonUnwrapped(prefix = "acceleration_average_")
-        private Vector3<Integer> accelerationAverage;
+        private Vector3<Double> accelerationAverage;
 
         @JsonUnwrapped(prefix = "gyroscope_max_")
-        private Vector3<Integer> gyroscopeMax;
+        private Vector3<Double> gyroscopeMax;
         @JsonUnwrapped(prefix = "gyroscope_average_")
-        private Vector3<Integer> gyroscopeAverage;
+        private Vector3<Double> gyroscopeAverage;
 
         @JsonUnwrapped(prefix = "rotation_average_")
-        private Vector4<Float> rotationAverage;
+        private Vector4<Double> rotationAverage;
 
     }
 

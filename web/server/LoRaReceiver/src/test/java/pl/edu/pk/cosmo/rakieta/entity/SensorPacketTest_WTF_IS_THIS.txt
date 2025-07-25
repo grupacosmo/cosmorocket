@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SensorPacketTest {
+class SensorPacketTest_WTF_IS_THIS {
 
     ObjectMapper objectMapper;
     ObjectWriter objectWriter;
@@ -212,6 +212,7 @@ class SensorPacketTest {
             )
         );
 
+        // CO TO JEST?!
         fireBaseService = new FireBaseService("https://cosmopklora-default-rtdb.europe-west1.firebasedatabase.app/", new File("firebase-credentials.json"));
         FirebaseDatabase database = fireBaseService.getDb();
         DatabaseReference ref = database.getReference("LoRa-test");
