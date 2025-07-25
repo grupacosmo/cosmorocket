@@ -34,9 +34,9 @@ public class Main implements Runnable {
     private String url = "";
     private String folderName;
     @Option(names = { "-o", "--output_location" })
-    private List<String> outputFolders = List.of(".");
+    private List<String> outputFolders = List.of("./logs/output");
     @Option(names = { "-r", "--raw_output_location" })
-    private List<String> rawOutputFolders = List.of(".");
+    private List<String> rawOutputFolders = List.of("./logs/raw_output");
     @Option(names = { "-c", "--credentials" })
     private String sdkCredentials = "firebase-credentials.json";
     private static final Scanner scanner = new Scanner(System.in);

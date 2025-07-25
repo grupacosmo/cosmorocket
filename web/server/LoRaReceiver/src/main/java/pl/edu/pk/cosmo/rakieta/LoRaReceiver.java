@@ -61,10 +61,10 @@ public class LoRaReceiver extends Thread {
             throws LoRaReceiverException, IOException {
 
         List<File> outputFiles = outputFolders.stream()
-                .map(folder -> new File(Paths.get(folder, folderName).toString(), lora.getName().substring(1).replace('/', '-') + ".txt")).toList();
+                .map(folder -> new File(Paths.get(folder, folderName).toString(), lora.getName().substring(1).replace('/', '-') + ".log")).toList();
 
         List<File> rawOutputFiles = rawOutputFolders.stream()
-                .map(folder -> new File(Paths.get(folder, folderName).toString(), lora.getName().substring(1).replace('/', '-') + ".txt")).toList();
+                .map(folder -> new File(Paths.get(folder, folderName).toString(), lora.getName().substring(1).replace('/', '-') + "_raw.log")).toList();
 
         Stream.concat(outputFiles.stream(), rawOutputFiles.stream()).forEach(file -> file.getParentFile().mkdirs());
 

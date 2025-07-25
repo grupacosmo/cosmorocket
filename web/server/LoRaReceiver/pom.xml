@@ -140,8 +140,8 @@
                     <mainClass>pl.edu.pk.cosmo.rakieta.Main</mainClass>
                     <arguments>
                         <argument>https://cosmopklora-default-rtdb.europe-west1.firebasedatabase.app</argument>
-                        <argument>-o output</argument>
-                        <argument>-r raw_output</argument>
+                        <argument>-o</argument><argument>logs/output</argument>
+                        <argument>-r</argument><argument>logs/raw_output</argument>
                     </arguments>
                 </configuration>
             </plugin>

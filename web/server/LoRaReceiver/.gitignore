@@ -39,6 +39,8 @@ build/
 ### Mac OS ###
 .DS_Store
 
-
 ### Credentials
 firebase-credentials.json
+
+### Other
+logs/
