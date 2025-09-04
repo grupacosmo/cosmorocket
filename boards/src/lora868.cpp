@@ -15,7 +15,7 @@ namespace lora {
 
 constexpr int spreading_factor = 7;  // Ranges from 6-12, default is 7
 constexpr int bandwidth = 250E3;
-constexpr int tx_power = 4;  // SET POWER TO 22 BEFORE LAUNCH
+constexpr int tx_power = 22;  // SET POWER TO 22 BEFORE LAUNCH
 // CHANGE FREQUENCY BEFORE LAUNCH PROBABLY TO 866,7 MHz !!!!
 constexpr int frequency = 866.7E6;
 volatile bool packet_received = false;

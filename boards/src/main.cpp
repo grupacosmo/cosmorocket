@@ -34,7 +34,7 @@ void setup() {
   mpu::init();
   ignition::init();
   lora::init();
-  // camera::init();
+  camera::init();
 
   // Pin mpu_task to core 0
   xTaskCreatePinnedToCore(mpu::mpu_task, "mpu", 64000, nullptr, 1, nullptr, 0);
@@ -89,7 +89,7 @@ void flight_controller(const logger::Packet &packet) {
           Serial.println("Launch command received!");
           memory::config.launch_altitude = packet.bmp_data.altitude;
           memory::config.status = memory::PRE_LAUNCH;
-          // camera::camera_start(120000);
+          camera::camera_start(120000);
           memory::write_cfg_file(memory::config);
           launch_time = esp_timer_get_time();
         }
@@ -99,14 +99,14 @@ void flight_controller(const logger::Packet &packet) {
         Serial.println("Button pressed, switching to PRE_LAUNCH mode.");
         memory::config.launch_altitude = packet.bmp_data.altitude;
         memory::config.status = memory::PRE_LAUNCH;
-        // camera::camera_start(120000);
+        camera::camera_start(120000);
         memory::write_cfg_file(memory::config);
 
         vTaskDelay(pdMS_TO_TICKS(1000));  // Debounce delay
       }
       break;
     case memory::PRE_LAUNCH:
-      if (rel_alt > 5.0) {
+      if (rel_alt > 7.0) {
         memory::config.status = memory::ASCENT;
         memory::write_cfg_file(memory::config);
       }
@@ -119,7 +119,7 @@ void flight_controller(const logger::Packet &packet) {
         Serial.println(
             "Warning: Altitude data is zero, skipping apogee detection.");
         if (esp_timer_get_time() - launch_time > 20000000LL) {
-          apogee_counter = 5;
+          apogee_counter = 10;
         }
       }
 
@@ -128,7 +128,7 @@ void flight_controller(const logger::Packet &packet) {
       } else {
         apogee_counter = 0;
       }
-      if (apogee_counter >= 5) {
+      if (apogee_counter >= 10) {
         Serial.printf("Apogee detected at %.2f meters\n", last_altitude);
         memory::config.first_parachute_height_log =
             static_cast<int>(last_altitude);

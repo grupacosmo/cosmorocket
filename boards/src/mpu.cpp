@@ -35,6 +35,8 @@ void init() {
     return;
   }
 
+  mpudev.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);
+
   mpudev.CalibrateAccel(MPU_CALIBRATION_ITER_CNT);
   mpudev.CalibrateGyro(MPU_CALIBRATION_ITER_CNT);
   mpudev.setDMPEnabled(true);

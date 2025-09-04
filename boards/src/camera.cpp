@@ -20,7 +20,7 @@ void init() {
   Serial.println("[CAMERA] Initialized camera.");
   pinMode(P1_CAMERA, OUTPUT);
   digitalWrite(P1_CAMERA, LOW);
-  camera_start(10000);
+  camera_start(30000);
 }
 
 void camera_start(int delay_ms) {

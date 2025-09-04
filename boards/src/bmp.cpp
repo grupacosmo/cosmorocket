@@ -8,7 +8,7 @@ namespace bmp {
 // Private
 namespace {
 // 1019.91 is avg Pressure in Cracow
-constexpr float SEALEVELPRESSURE_HPA = 1019.91;
+constexpr float SEALEVELPRESSURE_HPA = 1013.0;
 constexpr float DEFAULT_BMP_TEMPERATURE = 24.1500;
 constexpr float DEFAULT_BMP_PRESSURE = 74296.8906;
 
