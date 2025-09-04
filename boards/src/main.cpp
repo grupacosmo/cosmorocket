@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include <cstdint>
+
 #include "bmp.h"
 #include "board_config.h"
 #include "camera.h"
@@ -53,6 +55,7 @@ void main_task_loop(void *pvParameters) {
     packet.bmp_data = bmp::get_data();
     packet.mpu_data = mpu::get_data();
     packet.gps_data = gps::get_data();
+    packet.status = static_cast<int>(memory::config.status);
     flight_controller(packet);
     if (memory::config.status != memory::DEV) {
       String message = logger::serialize(packet);
@@ -66,7 +69,15 @@ void main_task_loop(void *pvParameters) {
 // First draft of the flight controller logic
 void flight_controller(const logger::Packet &packet) {
   static float last_altitude = 0.0;
+  static uint64_t launch_time = 0;
   float rel_alt = packet.bmp_data.altitude - memory::config.launch_altitude;
+
+  if (digitalRead(BUTTON) == LOW && memory::config.status != memory::DEV) {
+    Serial.println("Button pressed, switching to DEV mode.");
+    memory::config.status = memory::DEV;
+    memory::write_cfg_file(memory::config);
+    vTaskDelay(pdMS_TO_TICKS(1000));  // Debounce delay
+  }
 
   switch (memory::config.status) {
     case memory::DEV:
@@ -80,6 +91,7 @@ void flight_controller(const logger::Packet &packet) {
           memory::config.status = memory::PRE_LAUNCH;
           camera::camera_start(120000);
           memory::write_cfg_file(memory::config);
+          launch_time = esp_timer_get_time();
         }
       }
       // alternative way to switch to PRE_LAUNCH mode using builtin button
@@ -94,7 +106,7 @@ void flight_controller(const logger::Packet &packet) {
       }
       break;
     case memory::PRE_LAUNCH:
-      if (rel_alt > 5.0) {
+      if (rel_alt > 7.0) {
         memory::config.status = memory::ASCENT;
         memory::write_cfg_file(memory::config);
       }
@@ -103,12 +115,20 @@ void flight_controller(const logger::Packet &packet) {
     case memory::ASCENT:
       static int apogee_counter = 0;
 
+      if (packet.bmp_data.altitude == 0.0f) {
+        Serial.println(
+            "Warning: Altitude data is zero, skipping apogee detection.");
+        if (esp_timer_get_time() - launch_time > 20000000LL) {
+          apogee_counter = 10;
+        }
+      }
+
       if (rel_alt < last_altitude) {
         apogee_counter++;
       } else {
         apogee_counter = 0;
       }
-      if (apogee_counter >= 5) {
+      if (apogee_counter >= 10) {
         Serial.printf("Apogee detected at %.2f meters\n", last_altitude);
         memory::config.first_parachute_height_log =
             static_cast<int>(last_altitude);
