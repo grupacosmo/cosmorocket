@@ -1,16 +1,20 @@
 #include <Arduino.h>
+#include <I2Cdev.h>
 
 #include "board_config.h"
 
-void init_interfaces();
+void initInterfaces();
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println("Rocket initialisation started");
+    initInterfaces();
 
-    init_interfaces();
+    Serial.println("Rocket initialisation started");
 }
 
-void init_interfaces() { Wire.begin(I2C_SLAVE_SCL_PIN, I2C_SLAVE_SDA_PIN); }
+void initInterfaces() {
+    Serial.begin(115200);
+    Wire.begin(board_config::I2C_SLAVE_SCL_PIN,
+               board_config::I2C_SLAVE_SDA_PIN);
+}
 
 void loop() {}
