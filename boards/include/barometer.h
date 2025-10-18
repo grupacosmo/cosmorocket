@@ -5,8 +5,6 @@
 namespace barometer {
 
 void init();
-void measure();
-Data::Temperature getTemperature();
-Data::Pressure getPressure();
+void getData(Data::Pressure &pressure, Data::Temperature &temperature);
 
 }  // namespace barometer
