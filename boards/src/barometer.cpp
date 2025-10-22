@@ -73,7 +73,7 @@ void init() {
 void getData(Data::Pressure &pressure, Data::Temperature &temperature) {
     if (bmp280_read_temperature_pressure(&g_sensor, &raw_temperature, &temperature, &raw_pressure,
                                          &pressure) != 0) {
-        (void)bmp280_deinit(&g_sensor);
+        (void)bmp280_deinit(&g_sensor);  // Return value ignored
         Serial.println("bmp280: read failed. Reinitialising...");
         init();
         temperature = 0.0f;
