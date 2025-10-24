@@ -23,37 +23,37 @@ uint8_t g_buffer[1 + MAX_SUPPORTED_TRANSFER_SIZE];
 
 void init() { i2cInit(BUS_NUMBER, board_config::I2C_SDA_PIN, board_config::I2C_SCL_PIN, 400000); }
 
-bool read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
+Result read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported read size");
-        return false;
+        return FAILURE;
     }
 
     size_t read_count = 0;
     if (i2cWriteReadNonStop(BUS_NUMBER, addr, &reg, 1, buffer, size, TIMEOUT, &read_count)) {
         Serial.println("I2C: Failed to read");
-        return false;
+        return FAILURE;
     }
     if (read_count != size) {
         Serial.println("I2C: Read size mismatch");
-        return false;
+        return FAILURE;
     }
-    return true;
+    return SUCCESS;
 }
 
-bool write(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
+Result write(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported write size");
-        return false;
+        return FAILURE;
     }
 
     g_buffer[0] = reg;
     memcpy(&g_buffer[1], buffer, size);
     if (i2cWrite(BUS_NUMBER, addr, g_buffer, 1 + size, TIMEOUT)) {
         Serial.println("I2C: Failed to write");
-        return false;
+        return FAILURE;
     }
-    return true;
+    return SUCCESS;
 }
 
 }  // namespace i2c

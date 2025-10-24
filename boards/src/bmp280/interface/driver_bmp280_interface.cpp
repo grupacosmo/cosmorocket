@@ -73,10 +73,11 @@ uint8_t bmp280_interface_iic_deinit(void) { return 0; }
  *             - 1 read failed
  * @note       none
  */
-uint8_t bmp280_interface_iic_read(uint8_t addr, uint8_t reg, uint8_t* buf, uint16_t len) {
+uint8_t bmp280_interface_iic_read(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
     // We bit shift the address by one because the driver includes the read/write bit, which is not
     // needed, because the I2C implementation already adds it automatically
-    return !i2c::read(addr >> 1, reg, buf, len);
+    if (i2c::read(addr >> 1, reg, buf, len) != 0) return 1;
+    return 0;
 }
 
 /**
@@ -90,10 +91,11 @@ uint8_t bmp280_interface_iic_read(uint8_t addr, uint8_t reg, uint8_t* buf, uint1
  *            - 1 write failed
  * @note      none
  */
-uint8_t bmp280_interface_iic_write(uint8_t addr, uint8_t reg, uint8_t* buf, uint16_t len) {
+uint8_t bmp280_interface_iic_write(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
     // We bit shift the address by one because the driver includes the read/write bit, which is not
     // needed, because the I2C implementation already adds it automatically
-    return !i2c::write(addr >> 1, reg, buf, len);
+    if (i2c::write(addr >> 1, reg, buf, len) != 0) return 1;
+    return 0;
 }
 
 /**
@@ -132,7 +134,7 @@ uint8_t bmp280_interface_spi_deinit(void) {
  *             - 1 read failed
  * @note       none
  */
-uint8_t bmp280_interface_spi_read(uint8_t reg, uint8_t* buf, uint16_t len) {
+uint8_t bmp280_interface_spi_read(uint8_t reg, uint8_t *buf, uint16_t len) {
     // SPI interface is not implemented in the project.
     // Return failure.
     return 1;
@@ -148,7 +150,7 @@ uint8_t bmp280_interface_spi_read(uint8_t reg, uint8_t* buf, uint16_t len) {
  *            - 1 write failed
  * @note      none
  */
-uint8_t bmp280_interface_spi_write(uint8_t reg, uint8_t* buf, uint16_t len) {
+uint8_t bmp280_interface_spi_write(uint8_t reg, uint8_t *buf, uint16_t len) {
     // SPI interface is not implemented in the project.
     // Return failure.
     return 1;
@@ -166,7 +168,7 @@ void bmp280_interface_delay_ms(uint32_t ms) { vTaskDelay(ms / portTICK_PERIOD_MS
  * @param[in] fmt format data
  * @note      none
  */
-void bmp280_interface_debug_print(const char* const fmt, ...) {
+void bmp280_interface_debug_print(const char *const fmt, ...) {
     char str[256];
     va_list args;
     va_start(args, fmt);
