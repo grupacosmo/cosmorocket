@@ -21,11 +21,9 @@ constexpr inline size_t MAX_SUPPORTED_TRANSFER_SIZE = 255;
 // The first byte is always the register address
 uint8_t g_buffer[1 + MAX_SUPPORTED_TRANSFER_SIZE];
 
-void init() {
-    i2cInit(BUS_NUMBER, board_config::I2C_SLAVE_SCL_PIN, board_config::I2C_SLAVE_SDA_PIN, 400000);
-}
+void init() { i2cInit(BUS_NUMBER, board_config::I2C_SDA_PIN, board_config::I2C_SCL_PIN, 400000); }
 
-bool read(uint8_t addr, uint8_t reg, uint8_t* buffer, uint16_t size) {
+bool read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported read size");
         return false;
@@ -43,7 +41,7 @@ bool read(uint8_t addr, uint8_t reg, uint8_t* buffer, uint16_t size) {
     return true;
 }
 
-bool write(uint8_t addr, uint8_t reg, uint8_t* buffer, uint16_t size) {
+bool write(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported write size");
         return false;
