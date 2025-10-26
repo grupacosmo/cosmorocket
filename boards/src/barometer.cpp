@@ -39,7 +39,7 @@ void init() {
         return;
     }
 
-    if (bmp280_set_temperatue_oversampling(&g_sensor, BMP280_OVERSAMPLING_x1) != 0) {
+    if (bmp280_set_temperatue_oversampling(&g_sensor, BMP280_OVERSAMPLING_SKIP) != 0) {
         Serial.println("bmp280: set temperatue oversampling failed.\n");
         (void)bmp280_deinit(&g_sensor);
         return;
@@ -70,7 +70,7 @@ void init() {
     }
 }
 
-void getData(Data::Pressure &pressure, Data::Temperature &temperature) {
+void getData(Pressure &pressure, Temperature &temperature) {
     if (bmp280_read_temperature_pressure(&g_sensor, &raw_temperature, &temperature, &raw_pressure,
                                          &pressure) != 0) {
         (void)bmp280_deinit(&g_sensor);  // Return value ignored

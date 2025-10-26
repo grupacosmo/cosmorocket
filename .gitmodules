@@ -1,0 +1,3 @@
+[submodule "boards/lib/LSM6DSO-PID"]
+	path = boards/lib/LSM6DSO-PID
+	url = https://github.com/STMicroelectronics/LSM6DSO-PID/

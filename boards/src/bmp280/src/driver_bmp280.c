@@ -543,7 +543,7 @@ uint8_t bmp280_init(bmp280_handle_t *handle)
 
         return 4;                                                                    /* return error */
     }
-    if (id != 0x58)                                                                  /* check id */
+    if (id != 0x58 && id != 0x60)                                                    /* check id */
     {
         handle->debug_print("bmp280: id is error.\n");                               /* id is error */
         (void)handle->iic_deinit();                                                  /* iic deinit */

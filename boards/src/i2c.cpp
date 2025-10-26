@@ -41,7 +41,7 @@ Result read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
     return SUCCESS;
 }
 
-Result write(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
+Result write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported write size");
         return FAILURE;

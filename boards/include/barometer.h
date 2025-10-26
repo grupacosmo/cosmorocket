@@ -1,10 +1,11 @@
 #pragma once
 
-#include "data.h"
-
 namespace barometer {
 
+using Pressure = float;
+using Temperature = float;
+
 void init();
-void getData(Data::Pressure &pressure, Data::Temperature &temperature);
+void getData(Pressure &pressure, Temperature &temperature);
 
 }  // namespace barometer
