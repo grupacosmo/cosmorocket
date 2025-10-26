@@ -19,6 +19,7 @@ jobs:
           python-version: '3.11'
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
-
+      - name: Submodule update
+        run: git submodule update --init
       - name: Check PlatformIO Project
         run: pio check --fail-on-defect=high -d ${{ github.workspace }}/boards
