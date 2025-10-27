@@ -43,15 +43,14 @@ void setup() {
 }
 
 void loop() {
+    static int64_t last_time = 0;
+    if (last_time == 0) last_time = esp_timer_get_time();
+
     // Wait for the timer to measure given interval
     if (xSemaphoreTake(g_main_loop_semaphore, 500) == pdTRUE) {
-        static int64_t last_time = 0;
         auto time = esp_timer_get_time();
-        if (last_time == 0) last_time = time;
         auto time_diff = time - last_time;
         last_time = time;
-
-        Serial.printf("Time passed: %.2fms   ", time_diff / 1000.0f);
 
         barometer::Pressure air_pressure{};
         barometer::Humidity humidity{};
@@ -68,9 +67,13 @@ void loop() {
         // Get last angular rate measurement
         auto &angular_rate = (accelerometer::getAngularRateBuffer())[angular_rate_cnt - 1];
 
-        Serial.printf("%.2fPa, %.2f%%, %.2fC    Accel: %d %d %d    Angular rate: %d %d %d\n",
-                      air_pressure, humidity, temperature, acceleration[0], acceleration[1],
-                      acceleration[2], angular_rate[0], angular_rate[1], angular_rate[2]);
+        Serial.printf(
+            "Time passed: %.2fms    %.2fPa, %.2f%%, %.2fC    Accel: %d %d %d    Angular rate: %d "
+            "%d %d",
+            time_diff / 1000.0f, air_pressure, humidity, temperature, acceleration[0],
+            acceleration[1], acceleration[2], angular_rate[0], angular_rate[1], angular_rate[2]);
+
+        Serial.printf("    Reading data took: %.2fms\n", (esp_timer_get_time() - time) / 1000.0f);
     }
 }
 
