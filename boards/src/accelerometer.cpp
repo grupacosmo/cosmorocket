@@ -19,6 +19,7 @@ union UnionUByteToWord {
     int16_t word[3];
 };
 
+bool g_init_error = false;
 stmdev_ctx_t g_sensor_ctx;
 lsm6dso_fifo_tag_t g_tag;
 UnionUByteToWord g_data_raw;
@@ -54,19 +55,23 @@ void init() {
     vTaskDelay(SENSOR_BOOT_TIME / portTICK_PERIOD_MS);
     uint8_t device_id;
     if (lsm6dso_device_id_get(&g_sensor_ctx, &device_id) != 0) {
-        Serial.println("LSM6DSO: sensor not found");
+        Serial.println("LSM6DSO: sensor not found.");
+        g_init_error = true;
         return;
     }
     if (device_id != LSM6DSO_ID) {
         Serial.println("LSM6DSO: invalid device id.");
+        g_init_error = true;
         return;
     }
     lsm6dso_reset_set(&g_sensor_ctx, PROPERTY_ENABLE);
     uint8_t reset;
     do {
         vTaskDelay(1 / portTICK_PERIOD_MS);
-        if (lsm6dso_reset_get(&g_sensor_ctx, &reset) != 0)  // Stop if an error occurs
+        if (lsm6dso_reset_get(&g_sensor_ctx, &reset) != 0) {  // Stop if an error occurs
+            g_init_error = true;
             return;
+        }
     } while (reset);
 
     lsm6dso_i3c_disable_set(&g_sensor_ctx, LSM6DSO_I3C_DISABLE);
@@ -100,6 +105,8 @@ void readData() {
     // Reset buffer size
     g_acceleration_cnt = 0;
     g_angular_rate_cnt = 0;
+
+    if (g_init_error) return;
 
     // Check number of samples stored in FIFO
     if (lsm6dso_fifo_data_level_get(&g_sensor_ctx, &g_data_count) != 0) {
