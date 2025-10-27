@@ -42,7 +42,7 @@ static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t 
     return 0;
 }
 
-static void platform_delay(uint32_t ms) { vTaskDelay(ms / portTICK_PERIOD_MS); }
+static void platform_delay(uint32_t ms) { usleep(ms * 1000); }
 
 void init() {
     g_sensor_ctx.write_reg = platform_write;
