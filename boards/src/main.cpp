@@ -68,8 +68,8 @@ void loop() {
         auto &angular_rate = (accelerometer::getAngularRateBuffer())[angular_rate_cnt - 1];
 
         Serial.printf(
-            "Time passed: %.2fms    %.2fPa, %.2f%%, %.2fC    Accel: %d %d %d    Angular rate: %d "
-            "%d %d",
+            "Time passed: %2.2fms    %6.2fPa, %2.2f%%, %2.2fC    Accel: %5d %5d %5d    Angular "
+            "rate: %6d %6d %6d",
             time_diff / 1000.0f, air_pressure, humidity, temperature, acceleration[0],
             acceleration[1], acceleration[2], angular_rate[0], angular_rate[1], angular_rate[2]);
 
