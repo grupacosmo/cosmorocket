@@ -3,6 +3,7 @@
 #include "accelerometer.h"
 #include "barometer.h"
 #include "board_config.h"
+#include "gps.h"
 #include "i2c.h"
 
 // 50ms delay between reports
@@ -25,6 +26,7 @@ void setup() {
 
     Serial.println("Rocket initialisation started");
 
+    gps::init();
     i2c::init();
     barometer::init();
     accelerometer::init();
