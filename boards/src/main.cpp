@@ -5,6 +5,7 @@
 #include "board_config.h"
 #include "gps.h"
 #include "i2c.h"
+#include "storage.h"
 
 // 50ms delay between reports
 static constexpr inline int MAIN_TICK_INTERVAL = 50;
@@ -27,6 +28,7 @@ void setup() {
     Serial.println("Rocket initialisation started");
 
     gps::init();
+    storage::init();
     i2c::init();
     barometer::init();
     accelerometer::init();
@@ -54,28 +56,12 @@ void loop() {
         auto time_diff = time - last_time;
         last_time = time;
 
-        barometer::Pressure air_pressure{};
-        barometer::Humidity humidity{};
-        barometer::Temperature temperature{};
-        barometer::getData(air_pressure, humidity, temperature);
-
+        barometer::readAndProcessData();
         accelerometer::readData();
-        size_t acceleration_cnt = accelerometer::getAccelelerationCount();
-        size_t angular_rate_cnt = accelerometer::getAngularRateCount();
-
-        // Get last acceleration measurement
-        auto &acceleration = (accelerometer::getAccelerationBuffer())[acceleration_cnt - 1];
-
-        // Get last angular rate measurement
-        auto &angular_rate = (accelerometer::getAngularRateBuffer())[angular_rate_cnt - 1];
 
         Serial.printf(
-            "Time passed: %2.2fms    %6.2fPa, %2.2f%%, %2.2fC    Accel: %5d %5d %5d    Angular "
-            "rate: %6d %6d %6d",
-            time_diff / 1000.0f, air_pressure, humidity, temperature, acceleration[0],
-            acceleration[1], acceleration[2], angular_rate[0], angular_rate[1], angular_rate[2]);
-
-        Serial.printf("    Reading data took: %.2fms\n", (esp_timer_get_time() - time) / 1000.0f);
+            "Sensor read task:    Since last read: %2.2fms    Reading data took: %.2fms\n",
+            time_diff / 1000.0f, (esp_timer_get_time() - time) / 1000.0f);
     }
 }
 

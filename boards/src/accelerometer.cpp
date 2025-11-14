@@ -7,6 +7,7 @@
 #include "board_config.h"
 #include "common.h"
 #include "i2c.h"
+#include "storage.h"
 
 namespace accelerometer {
 
@@ -20,9 +21,6 @@ union UnionUByteToWord {
 bool g_init_error = false;
 stmdev_ctx_t g_sensor_ctx;
 UnionUByteToWord g_data_raw;
-std::array<Acceleration, ACCEL_BUFFER_SIZE> g_acceleration_buf;
-std::array<AngularRate, ANGULAR_RATE_BUFFER_SIZE> g_angular_rate_buf;
-size_t g_acceleration_cnt, g_angular_rate_cnt;
 
 static int32_t platform_write(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len) {
     // We bit shift the address by one because the driver includes the read/write bit, which is not
@@ -86,24 +84,17 @@ void init() {
 }
 
 template <typename T>
-Result readFifoEntry(T *buffer, size_t buffer_size, size_t &index) {
+Result readFifoEntry(T &buffer) {
     if (lsm6dso_fifo_out_raw_get(&g_sensor_ctx, g_data_raw.u_byte) != 0) return FAILURE;
-    if (index < buffer_size) {  // Only if there is space left in the buffer
-        auto &acceleration = buffer[index++];
-        acceleration[0] = g_data_raw.word[0];
-        acceleration[1] = g_data_raw.word[1];
-        acceleration[2] = g_data_raw.word[2];
-    }
+    buffer[0] = g_data_raw.word[0];
+    buffer[1] = g_data_raw.word[1];
+    buffer[2] = g_data_raw.word[2];
     return SUCCESS;
 }
 
 void readData() {
     lsm6dso_fifo_tag_t tag;
     uint16_t data_count;
-
-    // Reset buffer size
-    g_acceleration_cnt = 0;
-    g_angular_rate_cnt = 0;
 
     if (g_init_error) return;
 
@@ -121,15 +112,17 @@ void readData() {
         lsm6dso_fifo_sensor_tag_get(&g_sensor_ctx, &tag);
         switch (tag) {
             case LSM6DSO_XL_NC_TAG: {
-                auto res =
-                    readFifoEntry(g_acceleration_buf.data(), ACCEL_BUFFER_SIZE, g_acceleration_cnt);
+                Acceleration acceleration;
+                auto res = readFifoEntry(acceleration);
                 if (res != 0) return;
+                storage::postAccelerationData(acceleration);
                 break;
             }
             case LSM6DSO_GYRO_NC_TAG: {
-                auto res = readFifoEntry(g_angular_rate_buf.data(), ANGULAR_RATE_BUFFER_SIZE,
-                                         g_angular_rate_cnt);
+                AngularRate angular_rate;
+                auto res = readFifoEntry(angular_rate);
                 if (res != 0) return;
+                storage::postAngularRateData(angular_rate);
                 break;
             }
             default: {
@@ -142,15 +135,5 @@ void readData() {
         }
     }
 }
-
-std::array<Acceleration, ACCEL_BUFFER_SIZE> &getAccelerationBuffer() { return g_acceleration_buf; }
-
-std::array<AngularRate, ANGULAR_RATE_BUFFER_SIZE> &getAngularRateBuffer() {
-    return g_angular_rate_buf;
-}
-
-size_t getAccelelerationCount() { return g_acceleration_cnt; }
-
-size_t getAngularRateCount() { return g_angular_rate_cnt; }
 
 }  // namespace accelerometer

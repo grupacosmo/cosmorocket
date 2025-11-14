@@ -5,6 +5,7 @@
 
 #include "board_config.h"
 #include "i2c.h"
+#include "storage.h"
 
 namespace barometer {
 
@@ -74,7 +75,7 @@ void init() {
     Serial.println(period / 1000.0f);
 }
 
-Result getData(Pressure &pressure, Humidity &humidity, Temperature &temperature) {
+static Result readData(Pressure &pressure, Humidity &humidity, Temperature &temperature) {
     pressure = 0.0f;
     humidity = 0.0f;
     temperature = 0.0f;
@@ -92,6 +93,13 @@ Result getData(Pressure &pressure, Humidity &humidity, Temperature &temperature)
     temperature = static_cast<float>(g_data.temperature);
 
     return SUCCESS;
+}
+
+void readAndProcessData() {
+    Data data;
+    readData(data.air_pressure, data.humidity, data.temperature);
+
+    storage::postBarometerData(data);
 }
 
 }  // namespace barometer

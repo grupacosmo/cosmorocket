@@ -14,10 +14,4 @@ constexpr inline size_t ANGULAR_RATE_BUFFER_SIZE = 256;
 void init();
 void readData();
 
-std::array<Acceleration, ACCEL_BUFFER_SIZE> &getAccelerationBuffer();
-std::array<AngularRate, ANGULAR_RATE_BUFFER_SIZE> &getAngularRateBuffer();
-
-size_t getAccelelerationCount();
-size_t getAngularRateCount();
-
 }  // namespace accelerometer

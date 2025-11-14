@@ -4,6 +4,7 @@
 #include <driver/uart.h>
 
 #include "board_config.h"
+#include "storage.h"
 
 namespace gps {
 
@@ -15,7 +16,7 @@ constexpr inline size_t UART_PATTERN_QUEUE_SIZE = 20;
 constexpr inline size_t LINE_BUFFER_SIZE = 128;
 
 QueueHandle_t g_uart_queue;
-std::array<char, LINE_BUFFER_SIZE> g_line_buffer;
+Data g_line_buffer;
 
 static void readLine() {
     // Get posision of detected '\n' character
@@ -35,7 +36,7 @@ static void readLine() {
     int read_size = uart_read_bytes(UART_BUS_NUMBER, g_line_buffer.data(), to_read, UART_TIMEOUT);
     if (read_size != to_read) Serial.println("GPS: UART read error");
     g_line_buffer[read_size - 1] = '\0';  // Replace '\n' with end of string
-    Serial.printf("GPS data: %s\n", g_line_buffer.data());
+    storage::postGpsData(g_line_buffer);
 }
 
 static void uartEventTask(void *pvParameters) {

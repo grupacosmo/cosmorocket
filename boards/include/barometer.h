@@ -8,7 +8,13 @@ using Pressure = float;
 using Humidity = float;
 using Temperature = float;
 
+struct Data {
+    Pressure air_pressure;
+    Humidity humidity;
+    Temperature temperature;
+};
+
 void init();
-Result getData(Pressure &pressure, Humidity &humidity, Temperature &temperature);
+void readAndProcessData();
 
 }  // namespace barometer
