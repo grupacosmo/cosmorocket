@@ -19,7 +19,7 @@ constexpr inline size_t MAX_SUPPORTED_TRANSFER_SIZE = 255;
 
 // Temporary buffer for I2C write operations.
 // The first byte is always the register address
-uint8_t g_buffer[1 + MAX_SUPPORTED_TRANSFER_SIZE];
+std::array<uint8_t, 1 + MAX_SUPPORTED_TRANSFER_SIZE> g_buffer;
 
 void init() { i2cInit(BUS_NUMBER, board_config::I2C_SDA_PIN, board_config::I2C_SCL_PIN, 400000); }
 
@@ -48,8 +48,8 @@ Result write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size) {
     }
 
     g_buffer[0] = reg;
-    memcpy(&g_buffer[1], buffer, size);
-    if (i2cWrite(BUS_NUMBER, addr, g_buffer, 1 + size, TIMEOUT)) {
+    std::memcpy(&g_buffer[1], buffer, size);
+    if (i2cWrite(BUS_NUMBER, addr, g_buffer.data(), 1 + size, TIMEOUT)) {
         Serial.println("I2C: Failed to write");
         return FAILURE;
     }
