@@ -69,6 +69,7 @@ static bool performWriteTransaction(uint8_t addr, uint8_t reg, const uint8_t *bu
     if (i2c_master_write_byte(command, reg, true) != ESP_OK) return FAILURE;
     if (i2c_master_write(command, buffer, size, true) != ESP_OK) return FAILURE;
     if (i2c_master_stop(command) != ESP_OK) return FAILURE;
+    if (i2c_master_cmd_begin(BUS_NUMBER, command, TIMEOUT) != ESP_OK) return FAILURE;
     return SUCCESS;
 }
 
@@ -82,8 +83,12 @@ Result write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size) {
     i2c_cmd_handle_t command =
         i2c_cmd_link_create_static(command_buffer, I2C_LINK_RECOMMENDED_SIZE(2));
 
-    if (performWriteTransaction(addr, reg, buffer, size, command) != SUCCESS)
+    if (performWriteTransaction(addr, reg, buffer, size, command) != SUCCESS) {
         Serial.println("I2C: Failed to write");
+        i2c_cmd_link_delete_static(command);
+
+        return FAILURE;
+    }
 
     i2c_cmd_link_delete_static(command);
 
