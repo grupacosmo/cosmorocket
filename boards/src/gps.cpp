@@ -13,10 +13,10 @@ constexpr inline TickType_t UART_TIMEOUT = 100;
 constexpr inline size_t UART_BUFFER_SIZE = 1024;
 constexpr inline size_t UART_QUEUE_SIZE = 20;
 constexpr inline size_t UART_PATTERN_QUEUE_SIZE = 20;
-constexpr inline size_t LINE_BUFFER_SIZE = 128;
 
 QueueHandle_t g_uart_queue;
-Data g_line_buffer;
+std::array<char, nmea_decoder::MAX_SENTENCE_SIZE> g_line_buffer;
+Data g_output_buffer;
 
 static void readLine() {
     // Get posision of detected '\n' character
@@ -26,7 +26,7 @@ static void readLine() {
         return;
     }
     int to_read = pos + 1;  // Data length plus '\n'
-    if (to_read >= LINE_BUFFER_SIZE) {
+    if (to_read >= nmea_decoder::MAX_SENTENCE_SIZE) {
         Serial.println("GPS: Too much data in one NMEA line");
         uart_flush_input(UART_BUS_NUMBER);
         xQueueReset(g_uart_queue);
@@ -36,7 +36,8 @@ static void readLine() {
     int read_size = uart_read_bytes(UART_BUS_NUMBER, g_line_buffer.data(), to_read, UART_TIMEOUT);
     if (read_size != to_read) Serial.println("GPS: UART read error");
     g_line_buffer[read_size - 1] = '\0';  // Replace '\n' with end of string
-    storage::postGpsData(g_line_buffer);
+    if (nmea_decoder::decode(g_output_buffer, g_line_buffer) == nmea_decoder::SUCCESS)
+        storage::postGpsData(g_output_buffer);
 }
 
 static void uartEventTask(void *pvParameters) {
