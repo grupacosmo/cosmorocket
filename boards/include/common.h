@@ -1,3 +1,16 @@
 #pragma once
 
-enum Result { SUCCESS = 0, FAILURE };
+enum class Result {
+    SUCCESS = 0,
+    FAILURE,
+
+    I2C_INIT_FAILED,
+    I2C_WRITE_FAILED,
+    I2C_READ_FAILED,
+
+    BAROMETER_INIT_FAILED,
+    BAROMETER_READ_FAILED,
+
+    ACCELEROMETER_INIT_FAILED,
+    ACCELEROMETER_READ_FAILED,
+};

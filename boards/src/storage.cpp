@@ -9,16 +9,16 @@
 
 namespace storage {
 
-// 200ms delay between data flushes
+// 1000ms delay between data flushes
 static constexpr inline int DATA_FLUSH_INTERVAL = 1000;
 
 SemaphoreHandle_t g_semaphore;
 esp_timer_handle_t g_timer;
 
-// Thread safe (atomic) Single Procuder Single Consumer ring buffer
+// Thread safe (atomic) Single Producer Single Consumer ring buffer
 SPSCQueue<barometer::Data, 32> g_barometer_data_buffer;
-SPSCQueue<accelerometer::Acceleration, 1024> g_acceleration_buffer;
-SPSCQueue<accelerometer::AngularRate, 1024> g_angular_rate_buffer;
+SPSCQueue<std::array<int16_t, 3>, 1024> g_acceleration_buffer;
+SPSCQueue<std::array<int16_t, 3>, 1024> g_angular_rate_buffer;
 SPSCQueue<gps::Data, 64> g_gps_data_buffer;
 
 static void timerEvent(void *arg) { xSemaphoreGive(g_semaphore); }
@@ -40,7 +40,7 @@ static void flushTask(void *pvParameters) {
             Serial.println("LSM6DSO32 acceleration:");
             int cnt = 0;
             while (!g_acceleration_buffer.empty()) {
-                accelerometer::Acceleration data{};
+                std::array<int16_t, 3> data{};
                 g_acceleration_buffer.pop(data);
 
                 if (cnt < 5) Serial.printf("X: %6d Y: %6d Z: %6d\n", data[0], data[1], data[2]);
@@ -52,7 +52,7 @@ static void flushTask(void *pvParameters) {
             Serial.println("LSM6DSO32 angular rate:");
             cnt = 0;
             while (!g_angular_rate_buffer.empty()) {
-                accelerometer::AngularRate data{};
+                std::array<int16_t, 3> data{};
                 g_angular_rate_buffer.pop(data);
 
                 if (cnt < 5) Serial.printf("X: %6d Y: %6d Z: %6d\n", data[0], data[1], data[2]);
@@ -94,11 +94,11 @@ void postBarometerData(const barometer::Data &data) {
         Serial.println("Storage barometer data buffer overflow");
 }
 
-void postAccelerationData(const accelerometer::Acceleration &data) {
+void postAccelerationData(const std::array<int16_t, 3> &data) {
     if (!g_acceleration_buffer.push(data)) Serial.println("Storage acceleration buffer overflow");
 }
 
-void postAngularRateData(const accelerometer::AngularRate &data) {
+void postAngularRateData(const std::array<int16_t, 3> &data) {
     if (!g_angular_rate_buffer.push(data)) Serial.println("Storage angular rate buffer overflow");
 }
 

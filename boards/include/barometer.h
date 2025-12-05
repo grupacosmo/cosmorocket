@@ -4,17 +4,13 @@
 
 namespace barometer {
 
-using Pressure = float;
-using Humidity = float;
-using Temperature = float;
-
 struct Data {
-    Pressure air_pressure;
-    Humidity humidity;
-    Temperature temperature;
+    float air_pressure;
+    float humidity;
+    float temperature;
 };
 
-void init();
-void readAndProcessData();
+Result init();
+Result readAndProcessData();
 
 }  // namespace barometer

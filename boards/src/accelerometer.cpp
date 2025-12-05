@@ -4,41 +4,46 @@
 #include <RTOS.h>
 #include <lsm6dso_reg.h>
 
+#include <cstring>
+
 #include "board_config.h"
-#include "common.h"
 #include "i2c.h"
 #include "storage.h"
 
 namespace accelerometer {
 
 constexpr inline int SENSOR_BOOT_TIME = 10;  // In milliseconds
+constexpr inline size_t RAW_DATA_BUFFER_SIZE = 6;
 
-union UnionUByteToWord {
-    uint8_t u_byte[6];
-    int16_t word[3];
-};
-
+// Indicates that an error has occurred during initialization and all subsequent operations will
+// fail.
 bool g_init_error = false;
-stmdev_ctx_t g_sensor_ctx;
-UnionUByteToWord g_data_raw;
 
+// Sensor driver object
+stmdev_ctx_t g_sensor_ctx;
+
+// I/O functions passed to the lsm6dso driver:
 static int32_t platform_write(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len) {
     // We bit shift the address by one because the driver includes the read/write bit, which is not
     // needed, because the I2C implementation already adds it automatically
-    if (i2c::write(board_config::LSM6DSO_ADDR >> 1, reg, bufp, len) != 0) return 1;
+    if (i2c::write(board_config::LSM6DSO_ADDR >> 1, reg, bufp, len) != Result::SUCCESS) {
+        return 1;
+    }
     return 0;
 }
 
 static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len) {
     // We bit shift the address by one because the driver includes the read/write bit, which is not
     // needed, because the I2C implementation already adds it automatically
-    if (i2c::read(board_config::LSM6DSO_ADDR >> 1, reg, bufp, len) != 0) return 1;
+    if (i2c::read(board_config::LSM6DSO_ADDR >> 1, reg, bufp, len) != Result::SUCCESS) {
+        return 1;
+    }
     return 0;
 }
 
 static void platform_delay(uint32_t ms) { usleep(ms * 1000); }
 
-void init() {
+Result init() {
     g_sensor_ctx.write_reg = platform_write;
     g_sensor_ctx.read_reg = platform_read;
     g_sensor_ctx.mdelay = platform_delay;
@@ -47,24 +52,24 @@ void init() {
 
     // Wait for the sensor to boot
     vTaskDelay(SENSOR_BOOT_TIME / portTICK_PERIOD_MS);
-    uint8_t device_id;
+    uint8_t device_id = 0;
     if (lsm6dso_device_id_get(&g_sensor_ctx, &device_id) != 0) {
         Serial.println("LSM6DSO: sensor not found.");
         g_init_error = true;
-        return;
+        return Result::ACCELEROMETER_INIT_FAILED;
     }
     if (device_id != LSM6DSO_ID) {
         Serial.println("LSM6DSO: invalid device id.");
         g_init_error = true;
-        return;
+        return Result::ACCELEROMETER_INIT_FAILED;
     }
     lsm6dso_reset_set(&g_sensor_ctx, PROPERTY_ENABLE);
-    uint8_t reset;
+    uint8_t reset = 0;
     do {
         vTaskDelay(1 / portTICK_PERIOD_MS);
         if (lsm6dso_reset_get(&g_sensor_ctx, &reset) != 0) {  // Stop if an error occurs
             g_init_error = true;
-            return;
+            return Result::ACCELEROMETER_INIT_FAILED;
         }
     } while (reset);
 
@@ -74,66 +79,73 @@ void init() {
     lsm6dso_xl_full_scale_set(&g_sensor_ctx, LSM6DSO_16g);
     lsm6dso_gy_full_scale_set(&g_sensor_ctx, LSM6DSO_2000dps);
 
-    lsm6dso_fifo_xl_batch_set(&g_sensor_ctx, LSM6DSO_XL_BATCHED_AT_833Hz);
-    lsm6dso_fifo_gy_batch_set(&g_sensor_ctx, LSM6DSO_GY_BATCHED_AT_833Hz);
+    // Setup internal FIFO. The sensor will collect measurements in its internal memory and store
+    // it until the main task reads it (multiple measurements are read at once).
+    lsm6dso_fifo_xl_batch_set(&g_sensor_ctx, LSM6DSO_XL_BATCHED_AT_417Hz);
+    lsm6dso_fifo_gy_batch_set(&g_sensor_ctx, LSM6DSO_GY_BATCHED_AT_417Hz);
 
     lsm6dso_fifo_mode_set(&g_sensor_ctx, LSM6DSO_STREAM_MODE);
 
-    lsm6dso_xl_data_rate_set(&g_sensor_ctx, LSM6DSO_XL_ODR_833Hz);
-    lsm6dso_gy_data_rate_set(&g_sensor_ctx, LSM6DSO_GY_ODR_833Hz);
+    lsm6dso_xl_data_rate_set(&g_sensor_ctx, LSM6DSO_XL_ODR_417Hz);
+    lsm6dso_gy_data_rate_set(&g_sensor_ctx, LSM6DSO_GY_ODR_417Hz);
+
+    return Result::SUCCESS;
 }
 
-template <typename T>
-Result readFifoEntry(T &buffer) {
-    if (lsm6dso_fifo_out_raw_get(&g_sensor_ctx, g_data_raw.u_byte) != 0) return FAILURE;
-    buffer[0] = g_data_raw.word[0];
-    buffer[1] = g_data_raw.word[1];
-    buffer[2] = g_data_raw.word[2];
-    return SUCCESS;
+static std::array<int16_t, 3> convertToSignedShort(
+    const std::array<uint8_t, RAW_DATA_BUFFER_SIZE> &raw_data_buffer) {
+    std::array<int16_t, 3> tmp{};
+    std::memcpy(tmp.data(), raw_data_buffer.data(), RAW_DATA_BUFFER_SIZE * sizeof(uint8_t));
+    return tmp;
 }
 
-void readData() {
-    lsm6dso_fifo_tag_t tag;
-    uint16_t data_count;
+Result readData() {
+    lsm6dso_fifo_tag_t tag{};
+    uint16_t data_count = 0;
 
-    if (g_init_error) return;
+    if (g_init_error) return Result::ACCELEROMETER_INIT_FAILED;
 
     // Check number of samples stored in FIFO
     if (lsm6dso_fifo_data_level_get(&g_sensor_ctx, &data_count) != 0) {
         // Failed to read data from the sensor
-        Serial.println("LSM6DSO: read failed. Reinitialising...");
+        Serial.println("LSM6DSO: read failed. Reinitializing...");
         init();
-        return;
+        return Result::ACCELEROMETER_READ_FAILED;
     }
 
     // Serial.printf("LSM6DSO: reading %d measurements from FIFO\n", data_count);
+
+    std::array<uint8_t, RAW_DATA_BUFFER_SIZE> raw_data_buffer;
 
     while (data_count--) {
         lsm6dso_fifo_sensor_tag_get(&g_sensor_ctx, &tag);
         switch (tag) {
             case LSM6DSO_XL_NC_TAG: {
-                Acceleration acceleration;
-                auto res = readFifoEntry(acceleration);
-                if (res != 0) return;
-                storage::postAccelerationData(acceleration);
+                if (lsm6dso_fifo_out_raw_get(&g_sensor_ctx, raw_data_buffer.data()) != 0) {
+                    return Result::ACCELEROMETER_READ_FAILED;
+                }
+                storage::postAccelerationData(convertToSignedShort(raw_data_buffer));
                 break;
             }
             case LSM6DSO_GYRO_NC_TAG: {
-                AngularRate angular_rate;
-                auto res = readFifoEntry(angular_rate);
-                if (res != 0) return;
-                storage::postAngularRateData(angular_rate);
+                if (lsm6dso_fifo_out_raw_get(&g_sensor_ctx, raw_data_buffer.data()) != 0) {
+                    return Result::ACCELEROMETER_READ_FAILED;
+                }
+                storage::postAngularRateData(convertToSignedShort(raw_data_buffer));
                 break;
             }
             default: {
-                // Even if we don't use the data type, it still needs to be read
+                // Even if we don't use the data type, it still needs to be read to free the
+                // internal FIFO
                 Serial.println("LSM6DSO: excessive data found");
-                auto res = lsm6dso_fifo_out_raw_get(&g_sensor_ctx, g_data_raw.u_byte);
-                if (res != 0) return;
+                auto res = lsm6dso_fifo_out_raw_get(&g_sensor_ctx, raw_data_buffer.data());
+                if (res != 0) return Result::ACCELEROMETER_READ_FAILED;
                 break;
             }
         }
     }
+
+    return Result::SUCCESS;
 }
 
 }  // namespace accelerometer

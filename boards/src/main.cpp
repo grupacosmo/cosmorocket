@@ -10,7 +10,7 @@
 // 50ms delay between reports
 static constexpr inline int MAIN_TICK_INTERVAL = 50;
 
-// In miliseconds
+// In milliseconds
 static constexpr inline int SERIAL_WAIT_POLL_INTERVAL = 10;
 
 // Semaphore used to inform the main loop that the tick interval has passed

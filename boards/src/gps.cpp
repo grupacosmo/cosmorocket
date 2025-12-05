@@ -8,18 +8,28 @@
 
 namespace gps {
 
-constexpr inline uint8_t UART_BUS_NUMBER = UART_NUM_1;  // 0 is Serial
-constexpr inline TickType_t UART_TIMEOUT = 100;
+constexpr inline uint8_t UART_BUS_NUMBER = UART_NUM_1;
+constexpr inline TickType_t UART_TIMEOUT = 100;  // 100 ticks
+
+// Size of the FIFO buffer allocated by the driver
 constexpr inline size_t UART_BUFFER_SIZE = 1024;
+
 constexpr inline size_t UART_QUEUE_SIZE = 20;
 constexpr inline size_t UART_PATTERN_QUEUE_SIZE = 20;
 
+constexpr inline size_t GPS_UART_TASK_STACK_SIZE = 2048;
+
+// Event queue operated by the UART driver
 QueueHandle_t g_uart_queue;
+
+// Temporary buffer to store raw NMEA data until it's decoded.
 std::array<char, nmea_decoder::MAX_SENTENCE_SIZE> g_line_buffer;
+
+// Temporary buffer to store decoded GPS data.
 Data g_output_buffer;
 
 static void readLine() {
-    // Get posision of detected '\n' character
+    // Get position of detected '\n' character
     int pos = uart_pattern_pop_pos(UART_BUS_NUMBER);
     if (pos == -1) {
         Serial.println("GPS: UART pattern queue overflow");
@@ -44,13 +54,16 @@ static void uartEventTask(void *pvParameters) {
     uart_event_t event;
 
     while (true) {
-        // Block until an event is received
+        // UART driver sends an event to g_uart_queue when data is received.
+        // Stops the task and waits until an event is received
         if (xQueueReceive(g_uart_queue, reinterpret_cast<void *>(&event), portMAX_DELAY)) {
             switch (event.type) {
                 case UART_DATA:
                     // We do not read data here, only in UART_PATTERN_DET
                     break;
 
+                // Triggered by the driver when new line character is detected. We can now decode
+                // the line.
                 case UART_PATTERN_DET:
                     readLine();
                     break;
@@ -68,7 +81,6 @@ static void uartEventTask(void *pvParameters) {
                     break;
 
                 case UART_BREAK:
-                    // Serial.println("UART BREAK");
                     break;
 
                 case UART_PARITY_ERR:
@@ -88,27 +100,30 @@ static void uartEventTask(void *pvParameters) {
 }
 
 void init() {
+    // Configure UART interface to read the data from GPS
     uart_config_t uart_config = {
         .baud_rate = board_config::GPS_BAUDRATE,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = 112,  // Not used but must be defined. Default HardwareSerial value.
-        .source_clk = UART_SCLK_APB,
+        .rx_flow_ctrl_thresh = 112,   // Not used but must be defined. Default HardwareSerial value.
+        .source_clk = UART_SCLK_APB,  // Default clock source
     };
 
     uart_driver_install(UART_BUS_NUMBER, UART_BUFFER_SIZE, 0, UART_QUEUE_SIZE, &g_uart_queue, 0);
     uart_param_config(UART_BUS_NUMBER, &uart_config);
 
+    // TX pin is not used, but must be defined
     uart_set_pin(UART_BUS_NUMBER, board_config::GPS_UART_TX_PIN, board_config::GPS_UART_RX_PIN,
                  UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
-    // Setup pattern recognition to detect '\n' as the and of NMEA line
+    // Setup pattern recognition to detect '\n' as the end of NMEA line
     uart_enable_pattern_det_baud_intr(UART_BUS_NUMBER, '\n', 1, 9, 0, 0);
     uart_pattern_queue_reset(UART_BUS_NUMBER, UART_PATTERN_QUEUE_SIZE);
 
-    xTaskCreate(uartEventTask, "gpsUartEventTask", /* ucStackDepth = */ 2048, NULL,
+    xTaskCreate(uartEventTask, "gpsUartEventTask", /* ucStackDepth = */ GPS_UART_TASK_STACK_SIZE,
+                NULL,
                 /* uxPriority = */ 12, NULL);
 }
 

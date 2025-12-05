@@ -20,7 +20,7 @@ constexpr inline uint32_t TIMEOUT = 50;
 
 constexpr inline size_t MAX_SUPPORTED_TRANSFER_SIZE = 255;
 
-void init() {
+Result init() {
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = board_config::I2C_SDA_PIN,
@@ -36,63 +36,77 @@ void init() {
 
     if (i2c_param_config(BUS_NUMBER, &conf) != ESP_OK) {
         Serial.println("I2C: Config error");
-        return;
+        return Result::I2C_INIT_FAILED;
     }
 
     if (i2c_driver_install(BUS_NUMBER, conf.mode, 0, 0, 0) != ESP_OK) {
         Serial.println("I2C: Init error");
-        return;
+        return Result::I2C_INIT_FAILED;
     }
 
     i2c_set_timeout(BUS_NUMBER, BUS_TIMEOUT);
+    return Result::SUCCESS;
 }
 
 Result read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported read size");
-        return FAILURE;
+        return Result::I2C_READ_FAILED;
     }
 
     if (i2c_master_write_read_device(BUS_NUMBER, addr, &reg, 1, buffer, size,
                                      TIMEOUT / portTICK_RATE_MS) != ESP_OK) {
         Serial.println("I2C: Failed to read");
-        return FAILURE;
+        return Result::I2C_READ_FAILED;
     }
 
-    return SUCCESS;
+    return Result::SUCCESS;
 }
 
-static bool performWriteTransaction(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size,
-                                    i2c_cmd_handle_t command) {
-    if (i2c_master_start(command) != ESP_OK) return FAILURE;
-    if (i2c_master_write_byte(command, addr << 1, true) != ESP_OK) return FAILURE;
-    if (i2c_master_write_byte(command, reg, true) != ESP_OK) return FAILURE;
-    if (i2c_master_write(command, buffer, size, true) != ESP_OK) return FAILURE;
-    if (i2c_master_stop(command) != ESP_OK) return FAILURE;
-    if (i2c_master_cmd_begin(BUS_NUMBER, command, TIMEOUT) != ESP_OK) return FAILURE;
-    return SUCCESS;
+static Result performWriteTransaction(uint8_t addr, uint8_t reg, const uint8_t *buffer,
+                                      uint16_t size, i2c_cmd_handle_t command) {
+    if (i2c_master_start(command) != ESP_OK) {
+        return Result::I2C_WRITE_FAILED;
+    }
+    if (i2c_master_write_byte(command, addr << 1, true) != ESP_OK) {
+        return Result::I2C_WRITE_FAILED;
+    }
+    if (i2c_master_write_byte(command, reg, true) != ESP_OK) {
+        return Result::I2C_WRITE_FAILED;
+    }
+    if (i2c_master_write(command, buffer, size, true) != ESP_OK) {
+        return Result::I2C_WRITE_FAILED;
+    }
+    if (i2c_master_stop(command) != ESP_OK) {
+        return Result::I2C_WRITE_FAILED;
+    }
+    if (i2c_master_cmd_begin(BUS_NUMBER, command, TIMEOUT) != ESP_OK) {
+        return Result::I2C_WRITE_FAILED;
+    }
+    return Result::SUCCESS;
 }
 
 Result write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size) {
     if (size > MAX_SUPPORTED_TRANSFER_SIZE) {
         Serial.println("I2C: Error: unsupported write size");
-        return FAILURE;
+        return Result::I2C_WRITE_FAILED;
     }
 
     uint8_t command_buffer[I2C_LINK_RECOMMENDED_SIZE(2)] = {0};
     i2c_cmd_handle_t command =
         i2c_cmd_link_create_static(command_buffer, I2C_LINK_RECOMMENDED_SIZE(2));
 
-    if (performWriteTransaction(addr, reg, buffer, size, command) != SUCCESS) {
+    Result res = performWriteTransaction(addr, reg, buffer, size, command);
+    if (res != Result::SUCCESS) {
         Serial.println("I2C: Failed to write");
         i2c_cmd_link_delete_static(command);
 
-        return FAILURE;
+        return res;
     }
 
     i2c_cmd_link_delete_static(command);
 
-    return SUCCESS;
+    return Result::SUCCESS;
 }
 
 }  // namespace i2c

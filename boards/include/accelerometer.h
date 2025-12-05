@@ -3,15 +3,14 @@
 #include <array>
 #include <cstdint>
 
-namespace accelerometer {
+#include "common.h"
 
-using Acceleration = std::array<int16_t, 3>;
-using AngularRate = std::array<int16_t, 3>;
+namespace accelerometer {
 
 constexpr inline size_t ACCEL_BUFFER_SIZE = 256;
 constexpr inline size_t ANGULAR_RATE_BUFFER_SIZE = 256;
 
-void init();
-void readData();
+Result init();
+Result readData();
 
 }  // namespace accelerometer
