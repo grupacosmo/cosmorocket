@@ -1,0 +1,7 @@
+.cache/
+.devcontainer/
+.vscode/
+build/
+.clangd
+sdkconfig
+sdkconfig.old
