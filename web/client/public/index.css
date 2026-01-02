@@ -1,7 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap");
+
 * {
   margin: 0;
   padding: 0;
   cursor: default;
+  font-family: "Geist Mono";
 }
 
 body,
@@ -11,7 +14,12 @@ html {
 
 .flex {
   min-height: 100%;
+  max-height: 100%;
   display: flex;
+}
+
+.flex-1 {
+  flex: 1;
 }
 
 .flex-row {
@@ -22,9 +30,19 @@ html {
   flex-direction: column;
 }
 
+.navbar {
+  padding: 4px;
+  overflow-x: auto;
+  min-height: 30px;
+}
+
+.navbar-item {
+  padding: 4px;
+  white-space: nowrap;
+}
+
 #map {
   flex: 1;
-  max-height: 50%;
 }
 
 #sensor-table {
@@ -32,10 +50,13 @@ html {
 }
 
 .charts {
-  max-width: 100%;
+  max-width: 520px;
+  max-height: 100%;
   overflow: auto;
+  position: relative;
 }
 
-.chart {
+.chart-container {
+  position: relative;
   flex: 1;
 }

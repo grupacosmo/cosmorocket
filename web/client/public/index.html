@@ -12,20 +12,31 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <title>xd2</title>
+    <title>Cosmo PK rocket status preview</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/index.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="flex flex-col">
-      <div id="map"></div>
-      <div class="flex flex-row charts">
-        <div class="chart"><canvas class="chart" id="temp-chart"></canvas></div>
-        <div class="chart">
-          <canvas class="chart" id="pressure-chart"></canvas>
-        </div>
-        <div class="chart">
-          <canvas class="chart" id="altitude-chart"></canvas>
+      <div class="navbar flex flex-row no-wrap">
+        <div class="navbar-item flex-1" id="status">Loading...</div>
+        <div class="navbar-item flex-1" id="latitude"></div>
+        <div class="navbar-item flex-1" id="longitude"></div>
+        <div class="navbar-item flex-1" id="time"></div>
+      </div>
+      <div class="flex flex-row flex-1">
+        <div id="map"></div>
+        <div class="flex flex-col charts flex-1">
+          <div class="chart-container flex-1">
+            <canvas class="chart" id="temp-chart"></canvas>
+          </div>
+          <div class="chart-container flex-1">
+            <canvas class="chart" id="pressure-chart"></canvas>
+          </div>
+          <div class="chart-container flex-1">
+            <canvas class="chart" id="altitude-chart"></canvas>
+          </div>
         </div>
       </div>
     </div>
