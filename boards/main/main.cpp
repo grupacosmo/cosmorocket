@@ -1,11 +1,12 @@
-#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "i2c.h"
 
 static const char *TAG = "rocket";
 
 extern "C" void app_main(void) {
+    i2c::init();
+
     while (true) {
-        ESP_LOGI(TAG, "Hello World!");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
