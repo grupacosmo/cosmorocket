@@ -1,12 +1,20 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 
-enum class Result : uint8_t {
-    SUCCESS = 0,
+struct Success {};
+
+enum class Error : uint8_t {
     FAILURE,
 
-    I2C_INIT_FAILED,
+    I2C_INIT_FAILED = 0x10,
     I2C_WRITE_FAILED,
     I2C_READ_FAILED,
+
+    BME280_INIT_FAILED = 0x20,
+    BME280_READ_FAILED,
 };
+
+template <class T>
+using Result = std::expected<T, Error>;

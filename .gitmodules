@@ -1,0 +1,3 @@
+[submodule "boards/components/BME280/BME280_SensorAPI"]
+	path = boards/components/BME280/BME280_SensorAPI
+	url = https://github.com/boschsensortec/BME280_SensorAPI.git

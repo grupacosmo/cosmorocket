@@ -1,7 +1,9 @@
 #include "i2c.h"
 
 #include <cstring>
+#include <expected>
 
+#include "common.h"
 #include "driver/i2c.h"
 #include "esp_log.h"
 
@@ -16,7 +18,7 @@ constexpr inline int FREQUENCY = 400000;
 
 constexpr inline uint32_t TIMEOUT = 50;
 
-Result init() {
+auto init() -> Result<Success> {
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = CONFIG_I2C_SDA_GPIO,
@@ -32,67 +34,68 @@ Result init() {
 
     if (i2c_param_config(BUS_NUMBER, &conf) != ESP_OK) {
         ESP_LOGE(TAG, "Config error");
-        return Result::I2C_INIT_FAILED;
+        return std::unexpected(Error::I2C_INIT_FAILED);
     }
 
     if (i2c_driver_install(BUS_NUMBER, conf.mode, 0, 0, 0) != ESP_OK) {
         ESP_LOGE(TAG, "Init error");
-        return Result::I2C_INIT_FAILED;
+        return std::unexpected(Error::I2C_INIT_FAILED);
     }
 
-    return Result::SUCCESS;
+    return Success{};
 }
 
-Result read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size) {
+auto read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size)
+    -> Result<Success> {
     if (i2c_master_write_read_device(BUS_NUMBER, addr, &reg, 1, buffer, size,
                                      TIMEOUT / portTICK_PERIOD_MS) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to read");
-        return Result::I2C_READ_FAILED;
+        return std::unexpected(Error::I2C_READ_FAILED);
     }
 
-    return Result::SUCCESS;
+    return Success{};
 }
 
-static Result performWriteTransaction(uint8_t addr, uint8_t reg,
-                                      const uint8_t *buffer, uint16_t size,
-                                      i2c_cmd_handle_t command) {
+static auto performWriteTransaction(uint8_t addr, uint8_t reg,
+                                    const uint8_t *buffer, uint16_t size,
+                                    i2c_cmd_handle_t command)
+    -> Result<Success> {
     if (i2c_master_start(command) != ESP_OK) {
-        return Result::I2C_WRITE_FAILED;
+        return std::unexpected(Error::I2C_WRITE_FAILED);
     }
     if (i2c_master_write_byte(command, addr << 1U, true) != ESP_OK) {
-        return Result::I2C_WRITE_FAILED;
+        return std::unexpected(Error::I2C_WRITE_FAILED);
     }
     if (i2c_master_write_byte(command, reg, true) != ESP_OK) {
-        return Result::I2C_WRITE_FAILED;
+        return std::unexpected(Error::I2C_WRITE_FAILED);
     }
     if (i2c_master_write(command, buffer, size, true) != ESP_OK) {
-        return Result::I2C_WRITE_FAILED;
+        return std::unexpected(Error::I2C_WRITE_FAILED);
     }
     if (i2c_master_stop(command) != ESP_OK) {
-        return Result::I2C_WRITE_FAILED;
+        return std::unexpected(Error::I2C_WRITE_FAILED);
     }
     if (i2c_master_cmd_begin(BUS_NUMBER, command, TIMEOUT) != ESP_OK) {
-        return Result::I2C_WRITE_FAILED;
+        return std::unexpected(Error::I2C_WRITE_FAILED);
     }
-    return Result::SUCCESS;
+    return Success{};
 }
 
-Result write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size) {
+auto write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size)
+    -> Result<Success> {
     uint8_t command_buffer[I2C_LINK_RECOMMENDED_SIZE(2)] = {0};
     i2c_cmd_handle_t command = i2c_cmd_link_create_static(
         command_buffer, I2C_LINK_RECOMMENDED_SIZE(2));
 
-    Result res = performWriteTransaction(addr, reg, buffer, size, command);
-    if (res != Result::SUCCESS) {
-        ESP_LOGE(TAG, "Failed to write");
-        i2c_cmd_link_delete_static(command);
-
-        return res;
-    }
+    auto res = performWriteTransaction(addr, reg, buffer, size, command);
 
     i2c_cmd_link_delete_static(command);
 
-    return Result::SUCCESS;
+    return res.or_else([](Error const &error) -> Result<Success> {
+        ESP_LOGE(TAG, "Failed to write");
+
+        return std::unexpected(error);
+    });
 }
 
 }  // namespace i2c
