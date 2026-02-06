@@ -12,6 +12,7 @@
 #include "esp_log.h"
 #include "i2c.h"
 #include "sdkconfig.h"
+#include "storage.h"
 
 namespace lsm6dso {
 
@@ -130,8 +131,6 @@ auto readAndProcessData() -> Result<Success> {
 
     std::array<uint8_t, RAW_DATA_BUFFER_SIZE> raw_data_buffer{};
 
-    bool first = true;
-
     while (data_count--) {
         lsm6dso_fifo_sensor_tag_get(&g_sensor_ctx, &tag);
         switch (tag) {
@@ -140,13 +139,8 @@ auto readAndProcessData() -> Result<Success> {
                                              raw_data_buffer.data()) != 0) {
                     return std::unexpected(Error::LSM6DSO_READ_FAILED);
                 }
-                // storage::postAccelerationData(
-                //     convertToSignedShort(raw_data_buffer));
-                auto data = convertToSignedShort(raw_data_buffer);
-                if (first) {
-                    ESP_LOGI(TAG, "ACC: %d %d %d\n", data[0], data[1], data[2]);
-                    first = false;
-                }
+                storage::postAccelerationData(
+                    convertToSignedShort(raw_data_buffer));
                 break;
             }
             case LSM6DSO_GYRO_NC_TAG: {
@@ -154,13 +148,8 @@ auto readAndProcessData() -> Result<Success> {
                                              raw_data_buffer.data()) != 0) {
                     return std::unexpected(Error::LSM6DSO_READ_FAILED);
                 }
-                // storage::postAngularRateData(
-                //     convertToSignedShort(raw_data_buffer));
-                auto data = convertToSignedShort(raw_data_buffer);
-                if (first) {
-                    ESP_LOGI(TAG, "GYRO: %d %d %d\n", data[0], data[1],
-                             data[2]);
-                }
+                storage::postAngularRateData(
+                    convertToSignedShort(raw_data_buffer));
                 break;
             }
             default: {

@@ -17,6 +17,8 @@ enum class Error : uint8_t {
 
     LSM6DSO_INIT_FAILED = 0x30,
     LSM6DSO_READ_FAILED,
+
+    STORAGE_INIT_FAILED = 0x40,
 };
 
 template <class T>

@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "i2c.h"
 #include "sdkconfig.h"
+#include "storage.h"
 
 namespace bme280 {
 
@@ -122,9 +123,7 @@ auto readAndProcessData() -> Result<Success> {
     auto ret = readData();
 
     return ret.and_then([](Data const &data) -> Result<Success> {
-        // storage::postBarometerData(data);
-        ESP_LOGI(TAG, "%f %f %f", data.air_pressure, data.humidity,
-                 data.temperature);
+        storage::postBarometerData(data);
         return Success{};
     });
 }
