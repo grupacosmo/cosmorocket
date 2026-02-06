@@ -14,6 +14,9 @@ enum class Error : uint8_t {
 
     BME280_INIT_FAILED = 0x20,
     BME280_READ_FAILED,
+
+    LSM6DSO_INIT_FAILED = 0x30,
+    LSM6DSO_READ_FAILED,
 };
 
 template <class T>

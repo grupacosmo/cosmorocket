@@ -15,4 +15,9 @@ menu "Rocket board configuration"
         hex "BME280 I2C address"
         range 0x00 0xFF
         default 0x76
+
+    config LSM6DSO_I2C_ADDR
+        hex "LSM6DSO I2C address"
+        range 0x00 0xFF
+        default 0x6B
 endmenu
