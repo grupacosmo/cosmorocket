@@ -34,10 +34,9 @@ BME280_INTF_RET_TYPE platform_read(uint8_t reg_addr, uint8_t *reg_data,
 
 BME280_INTF_RET_TYPE platform_write(uint8_t reg_addr, const uint8_t *reg_data,
                                     uint32_t length, void *intf_ptr) {
-    i2c::write(CONFIG_BME280_I2C_ADDR, reg_addr, reg_data, length)
+    return i2c::write(CONFIG_BME280_I2C_ADDR, reg_addr, reg_data, length)
         .transform([](Success) -> BME280_INTF_RET_TYPE { return 0; })
         .value_or(-1);
-    return 0;
 }
 
 void bme280_delay_us(uint32_t period, void *intf_ptr) { usleep(period); }
@@ -102,6 +101,7 @@ static auto readData() -> Result<Data> {
     if (bme280_get_sensor_data(BME280_PRESS, &raw_data, &g_sensor) != 0) {
         ESP_LOGE(TAG, "Read failed. Reinitializing...");
         init();
+        g_init_error = false;
         return std::unexpected(Error::BME280_READ_FAILED);
     }
     data.air_pressure = static_cast<float>(
