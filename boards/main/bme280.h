@@ -12,7 +12,7 @@ struct Data {
     float temperature;
 };
 
-auto init() -> Result<Success>;
+auto init() -> std::expected<Success, Error>;
 auto readAndProcessData() -> std::expected<Success, Error>;
 
 }  // namespace bme280

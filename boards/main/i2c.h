@@ -6,10 +6,10 @@
 
 namespace i2c {
 
-auto init() -> Result<Success>;
+auto init() -> std::expected<Success, Error>;
 auto read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size)
-    -> Result<Success>;
+    -> std::expected<Success, Error>;
 auto write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size)
-    -> Result<Success>;
+    -> std::expected<Success, Error>;
 
 }  // namespace i2c

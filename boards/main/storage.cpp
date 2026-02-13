@@ -87,7 +87,7 @@ static void flushTask(void *pvParameters) {
     }
 }
 
-auto init() -> Result<Success> {
+auto init() -> std::expected<Success, Error> {
     auto sem = xSemaphoreCreateBinary();
     if (sem == nullptr) {
         ESP_LOGE(TAG, "Semaphore creation error");

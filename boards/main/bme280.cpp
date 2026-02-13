@@ -42,7 +42,7 @@ BME280_INTF_RET_TYPE platform_write(uint8_t reg_addr, const uint8_t *reg_data,
 
 void bme280_delay_us(uint32_t period, void *intf_ptr) { usleep(period); }
 
-auto init() -> Result<Success> {
+auto init() -> std::expected<Success, Error> {
     g_sensor.intf = BME280_I2C_INTF;
     g_sensor.intf_ptr = nullptr;  // Not used
     g_sensor.read = platform_read;
@@ -92,7 +92,7 @@ auto init() -> Result<Success> {
     return Success{};
 }
 
-static auto readData() -> Result<Data> {
+static auto readData() -> std::expected<Data, Error> {
     Data data{};
     if (g_init_error) {
         return std::unexpected(Error::BME280_INIT_FAILED);
@@ -119,10 +119,10 @@ static auto readData() -> Result<Data> {
     return data;
 }
 
-auto readAndProcessData() -> Result<Success> {
+auto readAndProcessData() -> std::expected<Success, Error> {
     auto ret = readData();
 
-    return ret.and_then([](Data const &data) -> Result<Success> {
+    return ret.and_then([](Data const &data) -> std::expected<Success, Error> {
         storage::postBarometerData(data);
         return Success{};
     });

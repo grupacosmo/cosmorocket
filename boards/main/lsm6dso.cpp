@@ -51,7 +51,7 @@ static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp,
 
 static void platform_delay(uint32_t ms) { usleep(ms * 1000); }
 
-auto init() -> Result<Success> {
+auto init() -> std::expected<Success, Error> {
     g_sensor_ctx.write_reg = platform_write;
     g_sensor_ctx.read_reg = platform_read;
     g_sensor_ctx.mdelay = platform_delay;
@@ -110,7 +110,7 @@ static std::array<int16_t, 3> convertToSignedShort(
     return tmp;
 }
 
-auto readAndProcessData() -> Result<Success> {
+auto readAndProcessData() -> std::expected<Success, Error> {
     lsm6dso_fifo_tag_t tag{};
     uint16_t data_count = 0;
 

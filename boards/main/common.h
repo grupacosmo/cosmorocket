@@ -20,6 +20,3 @@ enum class Error : uint8_t {
 
     STORAGE_INIT_FAILED = 0x40,
 };
-
-template <class T>
-using Result = std::expected<T, Error>;

@@ -18,7 +18,7 @@ constexpr inline int FREQUENCY = 400000;
 
 constexpr inline uint32_t TIMEOUT = 50;
 
-auto init() -> Result<Success> {
+auto init() -> std::expected<Success, Error> {
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = CONFIG_I2C_SDA_GPIO,
@@ -46,7 +46,7 @@ auto init() -> Result<Success> {
 }
 
 auto read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size)
-    -> Result<Success> {
+    -> std::expected<Success, Error> {
     if (i2c_master_write_read_device(BUS_NUMBER, addr, &reg, 1, buffer, size,
                                      TIMEOUT / portTICK_PERIOD_MS) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to read");
@@ -59,7 +59,7 @@ auto read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size)
 static auto performWriteTransaction(uint8_t addr, uint8_t reg,
                                     const uint8_t *buffer, uint16_t size,
                                     i2c_cmd_handle_t command)
-    -> Result<Success> {
+    -> std::expected<Success, Error> {
     if (i2c_master_start(command) != ESP_OK) {
         return std::unexpected(Error::I2C_WRITE_FAILED);
     }
@@ -82,7 +82,7 @@ static auto performWriteTransaction(uint8_t addr, uint8_t reg,
 }
 
 auto write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size)
-    -> Result<Success> {
+    -> std::expected<Success, Error> {
     uint8_t command_buffer[I2C_LINK_RECOMMENDED_SIZE(2)] = {0};
     i2c_cmd_handle_t command = i2c_cmd_link_create_static(
         command_buffer, I2C_LINK_RECOMMENDED_SIZE(2));
@@ -91,7 +91,7 @@ auto write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size)
 
     i2c_cmd_link_delete_static(command);
 
-    return res.or_else([](Error const &error) -> Result<Success> {
+    return res.or_else([](Error const &error) -> std::expected<Success, Error> {
         ESP_LOGE(TAG, "Failed to write");
 
         return std::unexpected(error);
