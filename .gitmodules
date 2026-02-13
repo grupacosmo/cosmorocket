@@ -1,0 +1,9 @@
+[submodule "boards/components/BME280/BME280_SensorAPI"]
+	path = boards/components/BME280/BME280_SensorAPI
+	url = https://github.com/boschsensortec/BME280_SensorAPI.git
+[submodule "boards/components/LSM6DSO/lsm6dso-pid"]
+	path = boards/components/LSM6DSO/lsm6dso-pid
+	url = https://github.com/STMicroelectronics/lsm6dso-pid.git
+[submodule "boards/components/ring_buffer/ultra-low-latency-ring-buffer"]
+	path = boards/components/ring_buffer/ultra-low-latency-ring-buffer
+	url = https://github.com/cale-cmd/ultra-low-latency-ring-buffer.git

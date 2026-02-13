@@ -1,0 +1,23 @@
+menu "Rocket board configuration"
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config I2C_SDA_GPIO
+        int "I2C SDA GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 7
+    
+    config I2C_SCL_GPIO
+        int "I2C SCL GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 6
+
+    config BME280_I2C_ADDR
+        hex "BME280 I2C address"
+        range 0x00 0xFF
+        default 0x76
+
+    config LSM6DSO_I2C_ADDR
+        hex "LSM6DSO I2C address"
+        range 0x00 0xFF
+        default 0x6B
+endmenu
