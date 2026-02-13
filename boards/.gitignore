@@ -2,6 +2,7 @@
 .devcontainer/
 .vscode/
 build/
+managed_components/
 .clangd
 sdkconfig
 sdkconfig.old

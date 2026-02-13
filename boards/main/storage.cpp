@@ -4,11 +4,12 @@
 #include <freertos/semphr.h>
 #include <ring_buffer.h>
 
-#include <cstddef>
 #include <expected>
 
 #include "common.h"
 #include "esp_err.h"
+#include "esp_flash.h"
+#include "esp_littlefs.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 
@@ -88,6 +89,27 @@ static void flushTask(void *pvParameters) {
 }
 
 auto init() -> std::expected<Success, Error> {
+    esp_vfs_littlefs_conf_t conf = {
+        .base_path = "/littlefs",
+        .partition_label = "littlefs",
+        .format_if_mount_failed = 1,
+        .dont_mount = 0,
+    };
+
+    uint32_t size_flash_chip;
+    if (auto ret = esp_flash_get_size(NULL, &size_flash_chip); ret != ESP_OK) {
+        ESP_LOGE(TAG, "Could not get flash size (code: %d). Proceeding anyways",
+                 ret);
+    }
+
+    ESP_LOGI(TAG, "Initializing storage. Flash memory size: %d",
+             size_flash_chip);
+
+    if (auto ret = esp_vfs_littlefs_register(&conf); ret != ESP_OK) {
+        ESP_LOGE(TAG, "Could not mount LittleFS filesystem (code: %d)", ret);
+        return std::unexpected(Error::STORAGE_INIT_FAILED);
+    }
+
     auto sem = xSemaphoreCreateBinary();
     if (sem == nullptr) {
         ESP_LOGE(TAG, "Semaphore creation error");
