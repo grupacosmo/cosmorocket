@@ -3,6 +3,8 @@
 .vscode/
 build/
 managed_components/
+data-partition/
 .clangd
 sdkconfig
 sdkconfig.old
+data-partition.bin
