@@ -56,7 +56,7 @@ static auto openFile(const char *filename)
 }
 
 static auto flushPressureTemperature() -> std::expected<Success, Error> {
-    ESP_LOGI(TAG, "BME280 data:");
+    // ESP_LOGI(TAG, "BME280 data:");
 
     auto file = openFile(PRESSURE_TEMP_FILENAME);
     if (!file.has_value()) {
@@ -74,8 +74,8 @@ static auto flushPressureTemperature() -> std::expected<Success, Error> {
             return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
         }
 
-        ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
-                 data.humidity, data.temperature);
+        // ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
+        //          data.humidity, data.temperature);
     }
     file->close();
 
@@ -83,7 +83,7 @@ static auto flushPressureTemperature() -> std::expected<Success, Error> {
 }
 
 static auto flushAcceleration() -> std::expected<Success, Error> {
-    ESP_LOGI(TAG, "LSM6DSO32 acceleration:");
+    // ESP_LOGI(TAG, "LSM6DSO32 acceleration:");
 
     auto file = openFile(ACCELERATION_FILENAME);
     if (!file.has_value()) {
@@ -102,19 +102,19 @@ static auto flushAcceleration() -> std::expected<Success, Error> {
             return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
         }
 
-        if (cnt < 5)
-            ESP_LOGI(TAG, "X: %6d Y: %6d Z: %6d", data[0], data[1], data[2]);
+        // if (cnt < 5)
+        //     ESP_LOGI(TAG, "X: %6d Y: %6d Z: %6d", data[0], data[1], data[2]);
 
         cnt++;
     }
-    ESP_LOGI(TAG, "And %d more records", cnt - 5);
+    // ESP_LOGI(TAG, "And %d more records", cnt - 5);
     file->close();
 
     return Success{};
 }
 
 static auto flushAngularRate() -> std::expected<Success, Error> {
-    ESP_LOGI(TAG, "LSM6DSO32 angular rate:");
+    // ESP_LOGI(TAG, "LSM6DSO32 angular rate:");
 
     auto file = openFile(ANGULAR_RATE_FILENAME);
     if (!file.has_value()) {
@@ -133,12 +133,12 @@ static auto flushAngularRate() -> std::expected<Success, Error> {
             return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
         }
 
-        if (cnt < 5)
-            ESP_LOGI(TAG, "X: %6d Y: %6d Z: %6d", data[0], data[1], data[2]);
+        // if (cnt < 5)
+        //     ESP_LOGI(TAG, "X: %6d Y: %6d Z: %6d", data[0], data[1], data[2]);
 
         cnt++;
     }
-    ESP_LOGI(TAG, "And %d more records", cnt - 5);
+    // ESP_LOGI(TAG, "And %d more records", cnt - 5);
     file->close();
 
     return Success{};
@@ -149,13 +149,13 @@ static void flushTask(void *pvParameters) {
 
     while (true) {
         if (xSemaphoreTake(sem, 500) == pdTRUE) {
-            ESP_LOGI(TAG, "Storage flush started");
+            // ESP_LOGI(TAG, "Storage flush started");
 
             std::ignore = flushPressureTemperature();
             std::ignore = flushAcceleration();
             std::ignore = flushAngularRate();
 
-            ESP_LOGI(TAG, "Storage flush complete");
+            // ESP_LOGI(TAG, "Storage flush complete");
 
             size_t storage = 0;
             size_t used = 0;
@@ -247,8 +247,8 @@ auto init() -> std::expected<Success, Error> {
             }
 
             if (xTaskCreate(flushTask, "STORAGE_FLUSH_TASK",
-                            /* usStackDepth = */ 4096, sem,
-                            /* uxPriority = */ 11, nullptr) != pdPASS) {
+                            /* usStackDepth = */ 40960, sem,
+                            /* uxPriority = */ 1, nullptr) != pdPASS) {
                 ESP_LOGE(TAG, "Failed to create RTOS task");
                 return std::unexpected(Error::STORAGE_INIT_FAILED);
             }

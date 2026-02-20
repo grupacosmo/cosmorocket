@@ -12,6 +12,7 @@ constexpr inline const char *TAG = "ROCKET";
 static constexpr inline int MAIN_TICK_INTERVAL = 50;
 
 static void mainLoopTimerCallback(void *arg);
+static void sensorReadTask(void *pvParameters);
 
 extern "C" void app_main(void) {
     ESP_LOGI(TAG, "Initializing ROCKET");
@@ -32,30 +33,41 @@ extern "C" void app_main(void) {
         ESP_LOGE(TAG, "Initializing I2C failed. Proceeding anyways");
     }
 
-    auto main_loop_semaphore = xSemaphoreCreateBinary();
-    if (main_loop_semaphore == nullptr) {
+    auto sensor_read_semaphore = xSemaphoreCreateBinary();
+    if (sensor_read_semaphore == nullptr) {
         ESP_LOGE(TAG,
                  "Failed to create main loop semaphore. Proceeding anyways");
     } else {
-        const esp_timer_create_args_t timer_config = {
-            .callback = mainLoopTimerCallback,
-            .arg = main_loop_semaphore,
-            .dispatch_method = ESP_TIMER_TASK,
-            .name = "MAIN_LOOP_TIMER",
-            .skip_unhandled_events = true};
-        esp_timer_handle_t timer;
-        if (auto res = esp_timer_create(&timer_config, &timer); res != ESP_OK) {
-            ESP_LOGE(TAG,
-                     "Main loop timer creation failed (code: %d). Proceeding "
-                     "anyways",
-                     res);
-        } else if (auto res = esp_timer_start_periodic(
-                       timer, MAIN_TICK_INTERVAL * 1000LLU);
-                   res != ESP_OK) {
-            ESP_LOGE(
-                TAG,
-                "Main loop timer start failed (code: %d). Proceeding anyways",
-                res);
+        if (xTaskCreate(sensorReadTask, "SENSOR_READ_TASK",
+                        /* usStackDepth = */ 40960, sensor_read_semaphore,
+                        /* uxPriority = */ 20, nullptr) != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create sensor read RTOS task");
+            while (true) {
+                vTaskDelay(50 / portTICK_PERIOD_MS);
+            }
+        } else {
+            const esp_timer_create_args_t timer_config = {
+                .callback = mainLoopTimerCallback,
+                .arg = sensor_read_semaphore,
+                .dispatch_method = ESP_TIMER_TASK,
+                .name = "SENSOR_READ_TIMER",
+                .skip_unhandled_events = true};
+            esp_timer_handle_t timer;
+            if (auto res = esp_timer_create(&timer_config, &timer);
+                res != ESP_OK) {
+                ESP_LOGE(
+                    TAG,
+                    "Main loop timer creation failed (code: %d). Proceeding "
+                    "anyways",
+                    res);
+            } else if (auto res = esp_timer_start_periodic(
+                           timer, MAIN_TICK_INTERVAL * 1000LLU);
+                       res != ESP_OK) {
+                ESP_LOGE(TAG,
+                         "Main loop timer start failed (code: %d). Proceeding "
+                         "anyways",
+                         res);
+            }
         }
     }
 
@@ -64,12 +76,24 @@ extern "C" void app_main(void) {
     }
 
     while (true) {
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+    }
+}
+
+static void mainLoopTimerCallback(void *arg) {
+    auto sensor_read_semaphore = static_cast<SemaphoreHandle_t>(arg);
+    xSemaphoreGive(sensor_read_semaphore);
+}
+
+static void sensorReadTask(void *pvParameters) {
+    auto semaphore = static_cast<SemaphoreHandle_t>(pvParameters);
+    while (true) {
         static int64_t last_time = 0;
         if (last_time == 0) {
             last_time = esp_timer_get_time();
         }
 
-        if (xSemaphoreTake(main_loop_semaphore, 500) == pdTRUE) {
+        if (xSemaphoreTake(semaphore, 500) == pdTRUE) {
             auto time = esp_timer_get_time();
             auto time_diff = time - last_time;
             last_time = time;
@@ -85,16 +109,11 @@ extern "C" void app_main(void) {
                          res.error());
             }
 
-            // ESP_LOGI(TAG,
-            //          "Sensor data has been read.\tSince last read: "
-            //          "%2.2fms\tReading data took: %.2fms",
-            //          time_diff / 1000.0f,
-            //          (esp_timer_get_time() - time) / 1000.0f);
+            ESP_LOGI(TAG,
+                     "Sensor data has been read.\tSince last read: "
+                     "%2.2fms\tReading data took: %.2fms",
+                     time_diff / 1000.0f,
+                     (esp_timer_get_time() - time) / 1000.0f);
         }
     }
-}
-
-static void mainLoopTimerCallback(void *arg) {
-    auto main_loop_semaphore = static_cast<SemaphoreHandle_t>(arg);
-    xSemaphoreGive(main_loop_semaphore);
 }
