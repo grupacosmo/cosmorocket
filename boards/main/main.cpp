@@ -1,7 +1,6 @@
 #include "bme280.h"
 #include "esp_log.h"
 #include "esp_timer.h"
-#include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
 #include "i2c.h"
 #include "lsm6dso.h"
@@ -86,11 +85,11 @@ extern "C" void app_main(void) {
                          res.error());
             }
 
-            ESP_LOGI(TAG,
-                     "Sensor data has been read.\tSince last read: "
-                     "%2.2fms\tReading data took: %.2fms",
-                     time_diff / 1000.0f,
-                     (esp_timer_get_time() - time) / 1000.0f);
+            // ESP_LOGI(TAG,
+            //          "Sensor data has been read.\tSince last read: "
+            //          "%2.2fms\tReading data took: %.2fms",
+            //          time_diff / 1000.0f,
+            //          (esp_timer_get_time() - time) / 1000.0f);
         }
     }
 }
