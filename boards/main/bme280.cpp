@@ -21,7 +21,7 @@ constexpr inline const char *TAG = "BME280";
 
 // Indicates that an error has occurred during initialization and all subsequent
 // operations will fail.
-bool g_init_error = false;
+bool g_initialized = false;
 // Sensor driver context
 struct bme280_dev g_sensor;
 
@@ -52,7 +52,6 @@ auto init() -> std::expected<Success, Error> {
     int8_t res = bme280_init(&g_sensor);
     if (res != BME280_OK) {
         ESP_LOGE(TAG, "sensor not found. %d", res);
-        g_init_error = true;
         return std::unexpected(Error::BME280_INIT_FAILED);
     }
 
@@ -74,14 +73,12 @@ auto init() -> std::expected<Success, Error> {
                                      &g_sensor);
     if (res != BME280_OK) {
         ESP_LOGE(TAG, "Set settings failed");
-        g_init_error = true;
         return std::unexpected(Error::BME280_INIT_FAILED);
     }
 
     res = bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &g_sensor);
     if (res != BME280_OK) {
         ESP_LOGE(TAG, "Set mode failed");
-        g_init_error = true;
         return std::unexpected(Error::BME280_INIT_FAILED);
     }
 
@@ -89,12 +86,14 @@ auto init() -> std::expected<Success, Error> {
     bme280_cal_meas_delay(&period, &settings);
     ESP_LOGD(TAG, "Measurement time [ms]: %f", period / 1000.0f);
 
+    g_initialized = true;
+
     return Success{};
 }
 
 static auto readData() -> std::expected<Data, Error> {
     Data data{};
-    if (g_init_error) {
+    if (not g_initialized) {
         return std::unexpected(Error::BME280_INIT_FAILED);
     }
 
@@ -102,7 +101,6 @@ static auto readData() -> std::expected<Data, Error> {
     if (bme280_get_sensor_data(BME280_PRESS, &raw_data, &g_sensor) != 0) {
         ESP_LOGE(TAG, "Read failed. Reinitializing...");
         init();
-        g_init_error = false;
         return std::unexpected(Error::BME280_READ_FAILED);
     }
     data.air_pressure = static_cast<float>(

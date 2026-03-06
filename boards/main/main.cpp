@@ -1,7 +1,9 @@
 #include "bme280.h"
+#include "common.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 #include "i2c.h"
 #include "lsm6dso.h"
 #include "storage.h"
@@ -16,6 +18,10 @@ static void sensorReadTask(void *pvParameters);
 
 extern "C" void app_main(void) {
     ESP_LOGI(TAG, "Initializing ROCKET");
+
+    if (!mainSemaphoreInit().has_value()) {
+        return;
+    }
 
     if (i2c::init().has_value()) {
         if (auto res = bme280::init(); !res.has_value()) {
@@ -33,50 +39,54 @@ extern "C" void app_main(void) {
         ESP_LOGE(TAG, "Initializing I2C failed. Proceeding anyways");
     }
 
+    esp_timer_handle_t timer{};
     auto sensor_read_semaphore = xSemaphoreCreateBinary();
     if (sensor_read_semaphore == nullptr) {
-        ESP_LOGE(TAG,
-                 "Failed to create main loop semaphore. Proceeding anyways");
+        ESP_LOGE(TAG, "Failed to create main loop semaphore. Exiting");
+        return;
+    }
+    if (xTaskCreatePinnedToCore(sensorReadTask, "SENSOR_READ_TASK",
+                                /* usStackDepth = */ 4096 * 16,
+                                sensor_read_semaphore,
+                                /* uxPriority = */ 15, nullptr, 0) != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create sensor read RTOS task");
+        while (true) {
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+        }
     } else {
-        if (xTaskCreate(sensorReadTask, "SENSOR_READ_TASK",
-                        /* usStackDepth = */ 40960, sensor_read_semaphore,
-                        /* uxPriority = */ 20, nullptr) != pdPASS) {
-            ESP_LOGE(TAG, "Failed to create sensor read RTOS task");
-            while (true) {
-                vTaskDelay(50 / portTICK_PERIOD_MS);
-            }
-        } else {
-            const esp_timer_create_args_t timer_config = {
-                .callback = mainLoopTimerCallback,
-                .arg = sensor_read_semaphore,
-                .dispatch_method = ESP_TIMER_TASK,
-                .name = "SENSOR_READ_TIMER",
-                .skip_unhandled_events = true};
-            esp_timer_handle_t timer;
-            if (auto res = esp_timer_create(&timer_config, &timer);
-                res != ESP_OK) {
-                ESP_LOGE(
-                    TAG,
-                    "Main loop timer creation failed (code: %d). Proceeding "
-                    "anyways",
-                    res);
-            } else if (auto res = esp_timer_start_periodic(
-                           timer, MAIN_TICK_INTERVAL * 1000LLU);
-                       res != ESP_OK) {
-                ESP_LOGE(TAG,
-                         "Main loop timer start failed (code: %d). Proceeding "
-                         "anyways",
-                         res);
-            }
+        const esp_timer_create_args_t timer_config = {
+            .callback = mainLoopTimerCallback,
+            .arg = sensor_read_semaphore,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "SENSOR_READ_TIMER",
+            .skip_unhandled_events = true};
+
+        if (auto res = esp_timer_create(&timer_config, &timer); res != ESP_OK) {
+            ESP_LOGE(TAG,
+                     "Main loop timer creation failed (code: %d). Proceeding "
+                     "anyways",
+                     res);
         }
     }
 
-    if (!storage::init().has_value()) {
+    if (not storage::init().has_value()) {
         ESP_LOGE(TAG, "Initializing STORAGE failed. Proceeding anyways");
     }
 
+    if (auto res =
+            esp_timer_start_periodic(timer, MAIN_TICK_INTERVAL * 1000LLU);
+        res != ESP_OK) {
+        ESP_LOGE(TAG,
+                 "Main loop timer start failed (code: %d). Proceeding anyways",
+                 res);
+    }
+
+    if (not storage::start().has_value()) {
+        ESP_LOGE(TAG, "Running STORAGE failed. Proceeding anyways");
+    }
+
     while (true) {
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -94,6 +104,8 @@ static void sensorReadTask(void *pvParameters) {
         }
 
         if (xSemaphoreTake(semaphore, 500) == pdTRUE) {
+            mainSemaphoreTake();
+
             auto time = esp_timer_get_time();
             auto time_diff = time - last_time;
             last_time = time;
@@ -108,6 +120,8 @@ static void sensorReadTask(void *pvParameters) {
                 ESP_LOGE(TAG, "Reading LSM6DSO data failed (CODE %d)",
                          res.error());
             }
+
+            mainSemaphoreGive();
 
             ESP_LOGI(TAG,
                      "Sensor data has been read.\tSince last read: "

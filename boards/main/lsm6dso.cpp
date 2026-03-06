@@ -23,7 +23,7 @@ constexpr inline size_t RAW_DATA_BUFFER_SIZE = 6;
 
 // Indicates that an error has occurred during initialization and all subsequent
 // operations will fail.
-bool g_init_error = false;
+bool g_initialized = false;
 
 // Sensor driver object
 stmdev_ctx_t g_sensor_ctx;
@@ -63,12 +63,10 @@ auto init() -> std::expected<Success, Error> {
     uint8_t device_id = 0;
     if (lsm6dso_device_id_get(&g_sensor_ctx, &device_id) != 0) {
         ESP_LOGE(TAG, "sensor not found.");
-        g_init_error = true;
         return std::unexpected(Error::LSM6DSO_INIT_FAILED);
     }
     if (device_id != LSM6DSO_ID) {
         ESP_LOGE(TAG, "invalid device id.");
-        g_init_error = true;
         return std::unexpected(Error::LSM6DSO_INIT_FAILED);
     }
     lsm6dso_reset_set(&g_sensor_ctx, PROPERTY_ENABLE);
@@ -77,7 +75,6 @@ auto init() -> std::expected<Success, Error> {
         vTaskDelay(1 / portTICK_PERIOD_MS);
         if (lsm6dso_reset_get(&g_sensor_ctx, &reset) !=
             0) {  // Stop if an error occurs
-            g_init_error = true;
             return std::unexpected(Error::LSM6DSO_INIT_FAILED);
         }
     } while (reset);
@@ -99,6 +96,8 @@ auto init() -> std::expected<Success, Error> {
     lsm6dso_xl_data_rate_set(&g_sensor_ctx, LSM6DSO_XL_ODR_417Hz);
     lsm6dso_gy_data_rate_set(&g_sensor_ctx, LSM6DSO_GY_ODR_417Hz);
 
+    g_initialized = true;
+
     return Success{};
 }
 
@@ -114,7 +113,7 @@ auto readAndProcessData() -> std::expected<Success, Error> {
     lsm6dso_fifo_tag_t tag{};
     uint16_t data_count = 0;
 
-    if (g_init_error) {
+    if (not g_initialized) {
         return std::unexpected(Error::LSM6DSO_INIT_FAILED);
     };
 

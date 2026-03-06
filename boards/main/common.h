@@ -22,4 +22,10 @@ enum class Error : uint8_t {
     STORAGE_FILE_CREATION_FAILED,
     STORAGE_FILE_OPENING_FAILED,
     STORAGE_FILE_WRITE_FAILED,
+
+    MAIN_SEMAPHORE_INIT_FAILED = 0x50,
 };
+
+auto mainSemaphoreInit() -> std::expected<Success, Error>;
+void mainSemaphoreGive();
+void mainSemaphoreTake();
