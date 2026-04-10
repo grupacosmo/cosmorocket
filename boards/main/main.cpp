@@ -19,6 +19,8 @@ static void sensorReadTask(void *pvParameters);
 extern "C" void app_main(void) {
     ESP_LOGI(TAG, "Initializing ROCKET");
 
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+
     if (!mainSemaphoreInit().has_value()) {
         return;
     }
@@ -73,16 +75,16 @@ extern "C" void app_main(void) {
         ESP_LOGE(TAG, "Initializing STORAGE failed. Proceeding anyways");
     }
 
+    if (not storage::start().has_value()) {
+        ESP_LOGE(TAG, "Running STORAGE failed. Proceeding anyways");
+    }
+
     if (auto res =
             esp_timer_start_periodic(timer, MAIN_TICK_INTERVAL * 1000LLU);
         res != ESP_OK) {
         ESP_LOGE(TAG,
                  "Main loop timer start failed (code: %d). Proceeding anyways",
                  res);
-    }
-
-    if (not storage::start().has_value()) {
-        ESP_LOGE(TAG, "Running STORAGE failed. Proceeding anyways");
     }
 
     while (true) {
@@ -104,7 +106,7 @@ static void sensorReadTask(void *pvParameters) {
         }
 
         if (xSemaphoreTake(semaphore, 500) == pdTRUE) {
-            mainSemaphoreTake();
+            // mainSemaphoreTake();
 
             auto time = esp_timer_get_time();
             auto time_diff = time - last_time;
@@ -121,7 +123,7 @@ static void sensorReadTask(void *pvParameters) {
                          res.error());
             }
 
-            mainSemaphoreGive();
+            // mainSemaphoreGive();
 
             ESP_LOGI(TAG,
                      "Sensor data has been read.\tSince last read: "

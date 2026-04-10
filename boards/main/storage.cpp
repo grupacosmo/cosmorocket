@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
-#include <fstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -34,12 +33,12 @@ constexpr const char *ACCELERATION_FILENAME = "ACCELERATION.BIN";
 constexpr const char *ANGULAR_RATE_FILENAME = "ANGULAR_RATE.BIN";
 
 // 1000ms delay between data flushes
-static constexpr inline int DATA_FLUSH_INTERVAL = 1000;
+static constexpr inline int DATA_FLUSH_INTERVAL = 4000;
 
 // Thread safe (atomic) Single Producer Single Consumer ring buffer
-SPSCQueue<bme280::Data, 64> g_barometer_data_buffer;
-SPSCQueue<std::array<int16_t, 3>, 1024> g_acceleration_buffer;
-SPSCQueue<std::array<int16_t, 3>, 1024> g_angular_rate_buffer;
+SPSCQueue<bme280::Data, 128> g_barometer_data_buffer;
+SPSCQueue<std::array<int16_t, 3>, 2048> g_acceleration_buffer;
+SPSCQueue<std::array<int16_t, 3>, 2048> g_angular_rate_buffer;
 // SPSCQueue<gps::Data, 64> g_gps_data_buffer;
 
 FILE *g_pressure_temp_file;
@@ -61,8 +60,12 @@ static auto openFile(const char *filename) -> std::expected<FILE *, Error> {
     return file;
 }
 
-static auto flushPressureTemperature() -> std::expected<Success, Error> {
+auto flushPressureTemperature() -> std::expected<Success, Error> {
     // ESP_LOGI(TAG, "BME280 data:");
+
+    if (g_barometer_data_buffer.empty()) {
+        return Success{};
+    }
 
     std::vector<bme280::Data> tmp_buffer{};
 
@@ -72,14 +75,15 @@ static auto flushPressureTemperature() -> std::expected<Success, Error> {
 
         tmp_buffer.push_back(data);
 
-        // ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
-        //          data.humidity, data.temperature);
+        ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
+                 data.humidity, data.temperature);
     }
 
     if (tmp_buffer.empty()) {
         return Success{};
     }
 
+    // mainSemaphoreTake();
     if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
                sizeof(bme280::Data), tmp_buffer.size(),
                g_pressure_temp_file) == 0) {
@@ -91,12 +95,17 @@ static auto flushPressureTemperature() -> std::expected<Success, Error> {
         ESP_LOGE(TAG, "Could not flush file");
         return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
     }
+    // mainSemaphoreGive();
 
     return Success{};
 }
 
-static auto flushAcceleration() -> std::expected<Success, Error> {
+auto flushAcceleration() -> std::expected<Success, Error> {
     // ESP_LOGI(TAG, "LSM6DSO32 acceleration:");
+
+    if (g_acceleration_buffer.empty()) {
+        return Success{};
+    }
 
     std::vector<std::array<int16_t, 3>> tmp_buffer{};
     tmp_buffer.reserve(500);
@@ -108,8 +117,9 @@ static auto flushAcceleration() -> std::expected<Success, Error> {
 
         tmp_buffer.push_back(data);
 
-        // if (cnt < 5)
-        //     ESP_LOGI(TAG, "X: %6d Y: %6d Z: %6d", data[0], data[1], data[2]);
+        if (cnt < 5)
+            ESP_LOGI(TAG, "Acceleration: X: %6d Y: %6d Z: %6d", data[0],
+                     data[1], data[2]);
 
         cnt++;
     }
@@ -119,6 +129,7 @@ static auto flushAcceleration() -> std::expected<Success, Error> {
         return Success{};
     }
 
+    // mainSemaphoreTake();
     if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
                sizeof(std::array<int16_t, 3>), tmp_buffer.size(),
                g_acceleration_file) == 0) {
@@ -130,12 +141,17 @@ static auto flushAcceleration() -> std::expected<Success, Error> {
         ESP_LOGE(TAG, "Could not flush file");
         return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
     }
+    // mainSemaphoreGive();
 
     return Success{};
 }
 
-static auto flushAngularRate() -> std::expected<Success, Error> {
+auto flushAngularRate() -> std::expected<Success, Error> {
     // ESP_LOGI(TAG, "LSM6DSO32 angular rate:");
+
+    if (g_angular_rate_buffer.empty()) {
+        return Success{};
+    }
 
     std::vector<std::array<int16_t, 3>> tmp_buffer{};
     tmp_buffer.reserve(500);
@@ -147,8 +163,9 @@ static auto flushAngularRate() -> std::expected<Success, Error> {
 
         tmp_buffer.push_back(data);
 
-        // if (cnt < 5)
-        //     ESP_LOGI(TAG, "X: %6d Y: %6d Z: %6d", data[0], data[1], data[2]);
+        if (cnt < 5)
+            ESP_LOGI(TAG, "Angular rate: X: %6d Y: %6d Z: %6d", data[0],
+                     data[1], data[2]);
 
         cnt++;
     }
@@ -158,6 +175,7 @@ static auto flushAngularRate() -> std::expected<Success, Error> {
         return Success{};
     }
 
+    // mainSemaphoreTake();
     if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
                sizeof(std::array<int16_t, 3>), tmp_buffer.size(),
                g_angular_rate_file) == 0) {
@@ -169,6 +187,8 @@ static auto flushAngularRate() -> std::expected<Success, Error> {
         ESP_LOGE(TAG, "Could not flush file");
         return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
     }
+    // mainSemaphoreGive();
+
     return Success{};
 }
 
@@ -179,13 +199,9 @@ static void flushTask(void *pvParameters) {
         if (xSemaphoreTake(sem, 500) == pdTRUE) {
             // ESP_LOGI(TAG, "Storage flush started");
 
-            mainSemaphoreTake();
-
             std::ignore = flushPressureTemperature();
             std::ignore = flushAcceleration();
             std::ignore = flushAngularRate();
-
-            mainSemaphoreGive();
 
             // ESP_LOGI(TAG, "Storage flush complete");
 
@@ -275,7 +291,7 @@ auto init() -> std::expected<Success, Error> {
 
             if (xTaskCreatePinnedToCore(flushTask, "STORAGE_FLUSH_TASK",
                                         /* usStackDepth = */ 4096 * 16, sem,
-                                        /* uxPriority = */ 5, nullptr,
+                                        /* uxPriority = */ 10, nullptr,
                                         1) != pdPASS) {
                 ESP_LOGE(TAG, "Failed to create RTOS task");
                 return std::unexpected(Error::STORAGE_INIT_FAILED);

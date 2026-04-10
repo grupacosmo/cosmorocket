@@ -10,7 +10,7 @@
 
 #include "common.h"
 #include "esp_log.h"
-#include "i2c.h"
+#include "i2c_device.h"
 #include "sdkconfig.h"
 #include "storage.h"
 
@@ -28,23 +28,19 @@ bool g_initialized = false;
 // Sensor driver object
 stmdev_ctx_t g_sensor_ctx;
 
-// I/O functions passed to the lsm6dso driver:
+I2CDevice g_i2c_device;
+
+// I/O functions passed to the lsm6dso driver
 static int32_t platform_write(void *handle, uint8_t reg, const uint8_t *bufp,
                               uint16_t len) {
-    // We bit shift the address by one because the driver includes the
-    // read/write bit, which is not needed, because the I2C implementation
-    // already adds it automatically
-    return i2c::write(CONFIG_LSM6DSO_I2C_ADDR, reg, bufp, len)
+    return g_i2c_device.write(reg, bufp, len)
         .transform([](Success) -> int32_t { return 0; })
         .value_or(1);
 }
 
 static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp,
                              uint16_t len) {
-    // We bit shift the address by one because the driver includes the
-    // read/write bit, which is not needed, because the I2C implementation
-    // already adds it automatically
-    return i2c::read(CONFIG_LSM6DSO_I2C_ADDR, reg, bufp, len)
+    return g_i2c_device.read(reg, bufp, len)
         .transform([](Success) -> int32_t { return 0; })
         .value_or(1);
 }
@@ -52,53 +48,59 @@ static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp,
 static void platform_delay(uint32_t ms) { usleep(ms * 1000); }
 
 auto init() -> std::expected<Success, Error> {
-    g_sensor_ctx.write_reg = platform_write;
-    g_sensor_ctx.read_reg = platform_read;
-    g_sensor_ctx.mdelay = platform_delay;
-    g_sensor_ctx.handle = nullptr;     // Not used
-    g_sensor_ctx.priv_data = nullptr;  // Not used
+    return I2CDevice::newDevice(CONFIG_LSM6DSO_I2C_ADDR)
+        .and_then([](I2CDevice device) -> std::expected<Success, Error> {
+            g_i2c_device = device;
+            g_sensor_ctx.write_reg = platform_write;
+            g_sensor_ctx.read_reg = platform_read;
+            g_sensor_ctx.mdelay = platform_delay;
+            g_sensor_ctx.handle = nullptr;     // Not used
+            g_sensor_ctx.priv_data = nullptr;  // Not used
 
-    // Wait for the sensor to boot
-    vTaskDelay(SENSOR_BOOT_TIME / portTICK_PERIOD_MS);
-    uint8_t device_id = 0;
-    if (lsm6dso_device_id_get(&g_sensor_ctx, &device_id) != 0) {
-        ESP_LOGE(TAG, "sensor not found.");
-        return std::unexpected(Error::LSM6DSO_INIT_FAILED);
-    }
-    if (device_id != LSM6DSO_ID) {
-        ESP_LOGE(TAG, "invalid device id.");
-        return std::unexpected(Error::LSM6DSO_INIT_FAILED);
-    }
-    lsm6dso_reset_set(&g_sensor_ctx, PROPERTY_ENABLE);
-    uint8_t reset = 0;
-    do {
-        vTaskDelay(1 / portTICK_PERIOD_MS);
-        if (lsm6dso_reset_get(&g_sensor_ctx, &reset) !=
-            0) {  // Stop if an error occurs
-            return std::unexpected(Error::LSM6DSO_INIT_FAILED);
-        }
-    } while (reset);
+            // Wait for the sensor to boot
+            vTaskDelay(SENSOR_BOOT_TIME / portTICK_PERIOD_MS);
+            uint8_t device_id = 0;
+            if (lsm6dso_device_id_get(&g_sensor_ctx, &device_id) != 0) {
+                ESP_LOGE(TAG, "sensor not found.");
+                return std::unexpected(Error::LSM6DSO_INIT_FAILED);
+            }
+            if (device_id != LSM6DSO_ID) {
+                ESP_LOGE(TAG, "invalid device id.");
+                return std::unexpected(Error::LSM6DSO_INIT_FAILED);
+            }
+            lsm6dso_reset_set(&g_sensor_ctx, PROPERTY_ENABLE);
+            uint8_t reset = 0;
+            do {
+                vTaskDelay(1 / portTICK_PERIOD_MS);
+                if (lsm6dso_reset_get(&g_sensor_ctx, &reset) !=
+                    0) {  // Stop if an error occurs
+                    return std::unexpected(Error::LSM6DSO_INIT_FAILED);
+                }
+            } while (reset);
 
-    lsm6dso_i3c_disable_set(&g_sensor_ctx, LSM6DSO_I3C_DISABLE);
-    lsm6dso_block_data_update_set(&g_sensor_ctx, PROPERTY_ENABLE);
+            lsm6dso_i3c_disable_set(&g_sensor_ctx, LSM6DSO_I3C_DISABLE);
+            lsm6dso_block_data_update_set(&g_sensor_ctx, PROPERTY_ENABLE);
 
-    lsm6dso_xl_full_scale_set(&g_sensor_ctx, LSM6DSO_16g);
-    lsm6dso_gy_full_scale_set(&g_sensor_ctx, LSM6DSO_2000dps);
+            lsm6dso_xl_full_scale_set(&g_sensor_ctx, LSM6DSO_16g);
+            lsm6dso_gy_full_scale_set(&g_sensor_ctx, LSM6DSO_2000dps);
 
-    // Setup internal FIFO. The sensor will collect measurements in its internal
-    // memory and store it until the main task reads it (multiple measurements
-    // are read at once).
-    lsm6dso_fifo_xl_batch_set(&g_sensor_ctx, LSM6DSO_XL_BATCHED_AT_417Hz);
-    lsm6dso_fifo_gy_batch_set(&g_sensor_ctx, LSM6DSO_GY_BATCHED_AT_417Hz);
+            // Setup internal FIFO. The sensor will collect measurements in its
+            // internal memory and store it until the main task reads it
+            // (multiple measurements are read at once).
+            lsm6dso_fifo_xl_batch_set(&g_sensor_ctx,
+                                      LSM6DSO_XL_BATCHED_AT_208Hz);
+            lsm6dso_fifo_gy_batch_set(&g_sensor_ctx,
+                                      LSM6DSO_GY_BATCHED_AT_208Hz);
 
-    lsm6dso_fifo_mode_set(&g_sensor_ctx, LSM6DSO_STREAM_MODE);
+            lsm6dso_fifo_mode_set(&g_sensor_ctx, LSM6DSO_STREAM_MODE);
 
-    lsm6dso_xl_data_rate_set(&g_sensor_ctx, LSM6DSO_XL_ODR_417Hz);
-    lsm6dso_gy_data_rate_set(&g_sensor_ctx, LSM6DSO_GY_ODR_417Hz);
+            lsm6dso_xl_data_rate_set(&g_sensor_ctx, LSM6DSO_XL_ODR_208Hz);
+            lsm6dso_gy_data_rate_set(&g_sensor_ctx, LSM6DSO_GY_ODR_208Hz);
 
-    g_initialized = true;
+            g_initialized = true;
 
-    return Success{};
+            return Success{};
+        });
 }
 
 static std::array<int16_t, 3> convertToSignedShort(

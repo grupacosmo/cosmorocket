@@ -3,13 +3,11 @@
 #include <cstdint>
 
 #include "common.h"
+#include "driver/i2c_types.h"
 
 namespace i2c {
 
 auto init() -> std::expected<Success, Error>;
-auto read(uint8_t addr, uint8_t reg, uint8_t *buffer, uint16_t size)
-    -> std::expected<Success, Error>;
-auto write(uint8_t addr, uint8_t reg, const uint8_t *buffer, uint16_t size)
-    -> std::expected<Success, Error>;
+auto getHandle() -> i2c_master_bus_handle_t;
 
 }  // namespace i2c
