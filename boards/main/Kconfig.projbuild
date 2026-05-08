@@ -20,4 +20,19 @@ menu "Rocket board configuration"
         hex "LSM6DSO I2C address"
         range 0x00 0xFF
         default 0x6B
+
+    config GPS_UART_TX_GPIO
+        int "GPS UART TX GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 15
+
+    config GPS_UART_RX_GPIO
+        int "GPS UART RX GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 16
+
+    config GPS_UART_BAUDRATE
+        int "GPS UART RX baudrate"
+        range 9600 1000000
+        default 115200
 endmenu

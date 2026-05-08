@@ -4,6 +4,7 @@
 #include "esp_timer.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
+#include "gps.h"
 #include "i2c.h"
 #include "lsm6dso.h"
 #include "storage.h"
@@ -40,6 +41,8 @@ extern "C" void app_main(void) {
     } else {
         ESP_LOGE(TAG, "Initializing I2C failed. Proceeding anyways");
     }
+
+    gps::init();
 
     esp_timer_handle_t timer{};
     auto sensor_read_semaphore = xSemaphoreCreateBinary();

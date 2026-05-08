@@ -21,6 +21,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/idf_additions.h"
+#include "gps.h"
 
 namespace storage {
 
@@ -31,6 +32,7 @@ constexpr const char *PARTITION_PATH = "/littlefs/";
 constexpr const char *PRESSURE_TEMP_FILENAME = "PRESSURE_TEMP.BIN";
 constexpr const char *ACCELERATION_FILENAME = "ACCELERATION.BIN";
 constexpr const char *ANGULAR_RATE_FILENAME = "ANGULAR_RATE.BIN";
+constexpr const char *GPS_FILENAME = "GPS.BIN";
 
 // 1000ms delay between data flushes
 static constexpr inline int DATA_FLUSH_INTERVAL = 4000;
@@ -39,11 +41,12 @@ static constexpr inline int DATA_FLUSH_INTERVAL = 4000;
 SPSCQueue<bme280::Data, 128> g_barometer_data_buffer;
 SPSCQueue<std::array<int16_t, 3>, 2048> g_acceleration_buffer;
 SPSCQueue<std::array<int16_t, 3>, 2048> g_angular_rate_buffer;
-// SPSCQueue<gps::Data, 64> g_gps_data_buffer;
+SPSCQueue<gps::Data, 64> g_gps_data_buffer;
 
 FILE *g_pressure_temp_file;
 FILE *g_acceleration_file;
 FILE *g_angular_rate_file;
+FILE *g_gps_file;
 
 esp_timer_handle_t g_timer{};
 
@@ -61,12 +64,6 @@ static auto openFile(const char *filename) -> std::expected<FILE *, Error> {
 }
 
 auto flushPressureTemperature() -> std::expected<Success, Error> {
-    // ESP_LOGI(TAG, "BME280 data:");
-
-    if (g_barometer_data_buffer.empty()) {
-        return Success{};
-    }
-
     std::vector<bme280::Data> tmp_buffer{};
 
     while (not g_barometer_data_buffer.empty()) {
@@ -101,12 +98,6 @@ auto flushPressureTemperature() -> std::expected<Success, Error> {
 }
 
 auto flushAcceleration() -> std::expected<Success, Error> {
-    // ESP_LOGI(TAG, "LSM6DSO32 acceleration:");
-
-    if (g_acceleration_buffer.empty()) {
-        return Success{};
-    }
-
     std::vector<std::array<int16_t, 3>> tmp_buffer{};
     tmp_buffer.reserve(500);
 
@@ -147,12 +138,6 @@ auto flushAcceleration() -> std::expected<Success, Error> {
 }
 
 auto flushAngularRate() -> std::expected<Success, Error> {
-    // ESP_LOGI(TAG, "LSM6DSO32 angular rate:");
-
-    if (g_angular_rate_buffer.empty()) {
-        return Success{};
-    }
-
     std::vector<std::array<int16_t, 3>> tmp_buffer{};
     tmp_buffer.reserve(500);
 
@@ -192,6 +177,38 @@ auto flushAngularRate() -> std::expected<Success, Error> {
     return Success{};
 }
 
+auto flushGPS() -> std::expected<Success, Error> {
+    std::vector<gps::Data> tmp_buffer{};
+    tmp_buffer.reserve(500);
+
+    while (not g_angular_rate_buffer.empty()) {
+        gps::Data data{};
+        g_gps_data_buffer.pop(data);
+
+        tmp_buffer.push_back(data);
+    }
+
+    if (tmp_buffer.empty()) {
+        return Success{};
+    }
+
+    // mainSemaphoreTake();
+    if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
+               sizeof(std::array<int16_t, 3>), tmp_buffer.size(),
+               g_gps_file) == 0) {
+        ESP_LOGE(TAG, "Error writing to file");
+        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
+    }
+
+    if (fsync(fileno(g_gps_file)) == -1) {
+        ESP_LOGE(TAG, "Could not flush file");
+        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
+    }
+    // mainSemaphoreGive();
+
+    return Success{};
+}
+
 static void flushTask(void *pvParameters) {
     auto sem = static_cast<SemaphoreHandle_t>(pvParameters);
 
@@ -202,6 +219,7 @@ static void flushTask(void *pvParameters) {
             std::ignore = flushPressureTemperature();
             std::ignore = flushAcceleration();
             std::ignore = flushAngularRate();
+            std::ignore = flushGPS();
 
             // ESP_LOGI(TAG, "Storage flush complete");
 
@@ -263,6 +281,12 @@ static auto initFilesystem() -> std::expected<Success, Error> {
         return std::unexpected(res.error());
     }
     g_angular_rate_file = res.value();
+
+    res = openFile(GPS_FILENAME);
+    if (!res.has_value()) {
+        return std::unexpected(res.error());
+    }
+    g_gps_file = res.value();
 
     return Success{};
 }
@@ -327,9 +351,9 @@ void postAngularRateData(const std::array<int16_t, 3> &data) {
         ESP_LOGE(TAG, "Storage angular rate buffer overflow");
 }
 
-// void postGpsData(const gps::Data &data) {
-//     if (not g_gps_data_buffer.push(data))
-//         ESP_LOGE(TAG, "GPS data buffer overflow");
-// }
+void postGpsData(const gps::Data &data) {
+    if (not g_gps_data_buffer.push(data))
+        ESP_LOGE(TAG, "GPS data buffer overflow");
+}
 
 }  // namespace storage

@@ -4,6 +4,7 @@
 
 #include "bme280.h"
 #include "common.h"
+#include "gps.h"
 
 namespace storage {
 
@@ -12,7 +13,7 @@ auto start() -> std::expected<Success, Error>;
 void postBarometerData(const bme280::Data &data);
 void postAccelerationData(const std::array<int16_t, 3> &data);
 void postAngularRateData(const std::array<int16_t, 3> &data);
-// void postGpsData(const gps::Data &data);
+void postGpsData(const gps::Data &data);
 
 auto flushPressureTemperature() -> std::expected<Success, Error>;
 auto flushAcceleration() -> std::expected<Success, Error>;
