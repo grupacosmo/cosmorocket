@@ -41,7 +41,7 @@ static constexpr inline int DATA_FLUSH_INTERVAL = 4000;
 SPSCQueue<bme280::Data, 128> g_barometer_data_buffer;
 SPSCQueue<std::array<int16_t, 3>, 2048> g_acceleration_buffer;
 SPSCQueue<std::array<int16_t, 3>, 2048> g_angular_rate_buffer;
-SPSCQueue<gps::Data, 64> g_gps_data_buffer;
+SPSCQueue<gps::Data, 512> g_gps_data_buffer;
 
 FILE *g_pressure_temp_file;
 FILE *g_acceleration_file;
@@ -64,147 +64,84 @@ static auto openFile(const char *filename) -> std::expected<FILE *, Error> {
 }
 
 auto flushPressureTemperature() -> std::expected<Success, Error> {
-    std::vector<bme280::Data> tmp_buffer{};
-
     while (not g_barometer_data_buffer.empty()) {
         bme280::Data data{};
         g_barometer_data_buffer.pop(data);
 
-        tmp_buffer.push_back(data);
-
         ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
                  data.humidity, data.temperature);
-    }
 
-    if (tmp_buffer.empty()) {
-        return Success{};
+        if (fwrite(reinterpret_cast<const char *>(&data), sizeof(bme280::Data),
+                   1, g_pressure_temp_file) == 0) {
+            ESP_LOGE(TAG, "Error writing to file");
+            return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
+        }
     }
-
-    // mainSemaphoreTake();
-    if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
-               sizeof(bme280::Data), tmp_buffer.size(),
-               g_pressure_temp_file) == 0) {
-        ESP_LOGE(TAG, "Error writing to file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-
-    if (fsync(fileno(g_pressure_temp_file)) == -1) {
-        ESP_LOGE(TAG, "Could not flush file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-    // mainSemaphoreGive();
 
     return Success{};
 }
 
 auto flushAcceleration() -> std::expected<Success, Error> {
-    std::vector<std::array<int16_t, 3>> tmp_buffer{};
-    tmp_buffer.reserve(500);
-
     int cnt = 0;
     while (not g_acceleration_buffer.empty()) {
         std::array<int16_t, 3> data{};
         g_acceleration_buffer.pop(data);
 
-        tmp_buffer.push_back(data);
-
         if (cnt < 5)
             ESP_LOGI(TAG, "Acceleration: X: %6d Y: %6d Z: %6d", data[0],
                      data[1], data[2]);
 
+        if (fwrite(reinterpret_cast<const char *>(data.data()),
+                   sizeof(int16_t) * 3, 1, g_acceleration_file) == 0) {
+            ESP_LOGE(TAG, "Error writing to file");
+            return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
+        }
+
         cnt++;
     }
     // ESP_LOGI(TAG, "And %d more records", cnt - 5);
-
-    if (tmp_buffer.empty()) {
-        return Success{};
-    }
-
-    // mainSemaphoreTake();
-    if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
-               sizeof(std::array<int16_t, 3>), tmp_buffer.size(),
-               g_acceleration_file) == 0) {
-        ESP_LOGE(TAG, "Error writing to file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-
-    if (fsync(fileno(g_acceleration_file)) == -1) {
-        ESP_LOGE(TAG, "Could not flush file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-    // mainSemaphoreGive();
 
     return Success{};
 }
 
 auto flushAngularRate() -> std::expected<Success, Error> {
-    std::vector<std::array<int16_t, 3>> tmp_buffer{};
-    tmp_buffer.reserve(500);
-
     int cnt = 0;
     while (not g_angular_rate_buffer.empty()) {
         std::array<int16_t, 3> data{};
         g_angular_rate_buffer.pop(data);
 
-        tmp_buffer.push_back(data);
-
         if (cnt < 5)
-            ESP_LOGI(TAG, "Angular rate: X: %6d Y: %6d Z: %6d", data[0],
+            ESP_LOGI(TAG, "Acceleration: X: %6d Y: %6d Z: %6d", data[0],
                      data[1], data[2]);
+
+        if (fwrite(reinterpret_cast<const char *>(data.data()),
+                   sizeof(int16_t) * 3, 1, g_angular_rate_file) == 0) {
+            ESP_LOGE(TAG, "Error writing to file");
+            return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
+        }
 
         cnt++;
     }
     // ESP_LOGI(TAG, "And %d more records", cnt - 5);
 
-    if (tmp_buffer.empty()) {
-        return Success{};
-    }
-
-    // mainSemaphoreTake();
-    if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
-               sizeof(std::array<int16_t, 3>), tmp_buffer.size(),
-               g_angular_rate_file) == 0) {
-        ESP_LOGE(TAG, "Error writing to file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-
-    if (fsync(fileno(g_angular_rate_file)) == -1) {
-        ESP_LOGE(TAG, "Could not flush file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-    // mainSemaphoreGive();
-
     return Success{};
 }
 
 auto flushGPS() -> std::expected<Success, Error> {
-    std::vector<gps::Data> tmp_buffer{};
-    tmp_buffer.reserve(500);
-
-    while (not g_angular_rate_buffer.empty()) {
+    int cnt = 0;
+    while (not g_gps_data_buffer.empty()) {
         gps::Data data{};
         g_gps_data_buffer.pop(data);
 
-        tmp_buffer.push_back(data);
+        if (fwrite(reinterpret_cast<const char *>(data.data()),
+                   sizeof(gps::Data), 1, g_gps_file) == 0) {
+            ESP_LOGE(TAG, "Error writing to file");
+            return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
+        }
+        cnt++;
     }
 
-    if (tmp_buffer.empty()) {
-        return Success{};
-    }
-
-    // mainSemaphoreTake();
-    if (fwrite(reinterpret_cast<const char *>(&tmp_buffer.at(0)),
-               sizeof(std::array<int16_t, 3>), tmp_buffer.size(),
-               g_gps_file) == 0) {
-        ESP_LOGE(TAG, "Error writing to file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-
-    if (fsync(fileno(g_gps_file)) == -1) {
-        ESP_LOGE(TAG, "Could not flush file");
-        return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-    }
-    // mainSemaphoreGive();
+    ESP_LOGI(TAG, "Flushed %d GPS lines", cnt);
 
     return Success{};
 }
@@ -216,10 +153,21 @@ static void flushTask(void *pvParameters) {
         if (xSemaphoreTake(sem, 500) == pdTRUE) {
             // ESP_LOGI(TAG, "Storage flush started");
 
+            // mainSemaphoreTake();
+
             std::ignore = flushPressureTemperature();
             std::ignore = flushAcceleration();
             std::ignore = flushAngularRate();
             std::ignore = flushGPS();
+
+            if (fsync(fileno(g_pressure_temp_file)) == -1 ||
+                fsync(fileno(g_acceleration_file)) == -1 ||
+                fsync(fileno(g_angular_rate_file)) == -1 ||
+                fsync(fileno(g_gps_file)) == -1) {
+                ESP_LOGE(TAG, "Could not flush files");
+            }
+
+            // mainSemaphoreGive();
 
             // ESP_LOGI(TAG, "Storage flush complete");
 
@@ -247,6 +195,8 @@ static auto initFilesystem() -> std::expected<Success, Error> {
         .format_if_mount_failed = 1,
         .dont_mount = 0,
     };
+
+    // mainSemaphoreTake();
 
     uint32_t size_flash_chip{};
     if (auto ret = esp_flash_get_size(nullptr, &size_flash_chip);
@@ -287,6 +237,8 @@ static auto initFilesystem() -> std::expected<Success, Error> {
         return std::unexpected(res.error());
     }
     g_gps_file = res.value();
+
+    // mainSemaphoreGive();
 
     return Success{};
 }

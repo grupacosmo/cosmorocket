@@ -4,7 +4,7 @@
 
 namespace gps {
 
-using Data = std::array<char, 256>;
+using Data = std::array<char, 196>;
 
 void init();
 
