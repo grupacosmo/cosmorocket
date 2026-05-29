@@ -20,7 +20,7 @@ static void sensorReadTask(void *pvParameters);
 extern "C" void app_main(void) {
     ESP_LOGI(TAG, "Initializing ROCKET");
 
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    // vTaskDelay(9000 / portTICK_PERIOD_MS);
 
     if (!mainSemaphoreInit().has_value()) {
         return;
@@ -41,8 +41,6 @@ extern "C" void app_main(void) {
     } else {
         ESP_LOGE(TAG, "Initializing I2C failed. Proceeding anyways");
     }
-
-    gps::init();
 
     esp_timer_handle_t timer{};
     auto sensor_read_semaphore = xSemaphoreCreateBinary();
@@ -89,6 +87,8 @@ extern "C" void app_main(void) {
                  "Main loop timer start failed (code: %d). Proceeding anyways",
                  res);
     }
+
+    gps::init();
 
     while (true) {
         vTaskDelay(5000 / portTICK_PERIOD_MS);

@@ -1,9 +1,11 @@
 #include "gps.h"
 
 #include <driver/uart.h>
+#include <minmea/minmea.h>
 
 #include <climits>
 #include <cstring>
+#include <format>
 
 #include "esp_log.h"
 #include "storage.h"
@@ -23,13 +25,15 @@ constexpr inline size_t UART_PATTERN_QUEUE_SIZE = 20;
 
 constexpr inline int MAX_NMEA_SENTENCE_SIZE = 196;
 
-constexpr inline size_t GPS_UART_TASK_STACK_SIZE = SHRT_MAX;
+constexpr inline size_t GPS_UART_TASK_STACK_SIZE = 8192;
 
 // Event queue operated by the UART driver
 QueueHandle_t g_uart_queue;
 
 // Temporary buffer to store raw NMEA data until it's decoded.
 std::array<char, MAX_NMEA_SENTENCE_SIZE> g_line_buffer;
+
+int i = 0;
 
 static void readLine() {
     // Get position of detected '\n' character
@@ -51,15 +55,22 @@ static void readLine() {
     if (read_size != to_read) ESP_LOGW(TAG, "UART read error");
     g_line_buffer[read_size - 1] = '\0';  // Replace '\n' with end of string
 
-    char *data = g_line_buffer.data();
-    ESP_LOGI(TAG, "%s", data);
-    gps::Data postedData;
-    std::copy(g_line_buffer.begin(), g_line_buffer.end(), postedData.begin());
-    storage::postGpsData(postedData);
+    // char *data = g_line_buffer.data();
+    // ESP_LOGI(TAG, "%s", data);
 
-    // if (nmea_decoder::decode(g_output_buffer, g_line_buffer) ==
-    //     nmea_decoder::SUCCESS)
-    //     storage::postGpsData(g_output_buffer);
+    if (minmea_sentence_id(g_line_buffer.data(), false) ==
+        MINMEA_SENTENCE_RMC) {
+        struct minmea_sentence_rmc frame;
+        if (minmea_parse_rmc(&frame, g_line_buffer.data())) {
+            gps::Data data;
+            std::format_to(data.begin(),
+                           "{:02d}:{:02d}:{:02d}.{:04d} {} {}\n\0",
+                           frame.time.hours, frame.time.minutes,
+                           frame.time.seconds, frame.time.microseconds / 1000,
+                           frame.latitude.value, frame.longitude.value);
+            storage::postGpsData(data);
+        }
+    }
 }
 
 static void uartEventTask(void *pvParameters) {

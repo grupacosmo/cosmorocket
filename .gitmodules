@@ -7,3 +7,6 @@
 [submodule "boards/components/ring_buffer/ultra-low-latency-ring-buffer"]
 	path = boards/components/ring_buffer/ultra-low-latency-ring-buffer
 	url = https://github.com/cale-cmd/ultra-low-latency-ring-buffer.git
+[submodule "boards/components/minmea/minmea"]
+	path = boards/components/minmea/minmea
+	url = https://github.com/kosma/minmea.git

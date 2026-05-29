@@ -4,7 +4,9 @@
 
 namespace gps {
 
-using Data = std::array<char, 196>;
+constexpr inline std::size_t GPS_LINE_SIZE = 64;
+
+using Data = std::array<char, GPS_LINE_SIZE>;
 
 void init();
 
