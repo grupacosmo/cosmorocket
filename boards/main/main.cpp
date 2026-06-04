@@ -20,7 +20,7 @@ static void sensorReadTask(void *pvParameters);
 extern "C" void app_main(void) {
     ESP_LOGI(TAG, "Initializing ROCKET");
 
-    // vTaskDelay(9000 / portTICK_PERIOD_MS);
+    vTaskDelay(15000 / portTICK_PERIOD_MS);
 
     if (!mainSemaphoreInit().has_value()) {
         return;

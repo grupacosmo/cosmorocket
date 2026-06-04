@@ -3,11 +3,15 @@
 #include <driver/uart.h>
 #include <minmea/minmea.h>
 
+#include <algorithm>
+#include <array>
 #include <climits>
+#include <cstddef>
 #include <cstring>
 #include <format>
 
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "storage.h"
 
 namespace gps {
@@ -35,6 +39,9 @@ std::array<char, MAX_NMEA_SENTENCE_SIZE> g_line_buffer;
 
 int i = 0;
 
+template <size_t N>
+static void decodeMinmeaFloat(std::array<char, N> &dst, minmea_float value) {}
+
 static void readLine() {
     // Get position of detected '\n' character
     int pos = uart_pattern_pop_pos(UART_BUS_NUMBER);
@@ -58,18 +65,53 @@ static void readLine() {
     // char *data = g_line_buffer.data();
     // ESP_LOGI(TAG, "%s", data);
 
-    if (minmea_sentence_id(g_line_buffer.data(), false) ==
-        MINMEA_SENTENCE_RMC) {
-        struct minmea_sentence_rmc frame;
-        if (minmea_parse_rmc(&frame, g_line_buffer.data())) {
-            gps::Data data;
-            std::format_to(data.begin(),
-                           "{:02d}:{:02d}:{:02d}.{:04d} {} {}\n\0",
-                           frame.time.hours, frame.time.minutes,
-                           frame.time.seconds, frame.time.microseconds / 1000,
-                           frame.latitude.value, frame.longitude.value);
-            storage::postGpsData(data);
+    // Our GPS sends: $GPGSV $GBGSV $GAGSV $GQGSV $GNGSA $GNVTG $GNGGA $GNRMC
+
+    switch (minmea_sentence_id(g_line_buffer.data(), false)) {
+        case MINMEA_SENTENCE_GGA: {  // sentence of type GGA contains altitude
+            struct minmea_sentence_gga frame;
+            if (minmea_parse_gga(&frame, g_line_buffer.data())) {
+                gps::Data data = {esp_timer_get_time(), frame};
+                storage::postGpsData(data);
+
+                std::array<char, 128> text;
+                std::ranges::fill(text, 0);
+                std::format_to_n(
+                    text.begin(), text.size() - 1,
+                    "{:02d}:{:02d}:{:02d}.{:d} {} {} alt: {}", frame.time.hours,
+                    frame.time.minutes, frame.time.seconds,
+                    frame.time.microseconds / 100000, frame.latitude.value,
+                    frame.longitude.value, frame.altitude.value);
+                // ESP_LOGI(TAG, "%s", text.data());
+            }
+            break;
         }
+        case MINMEA_SENTENCE_RMC: {
+            struct minmea_sentence_rmc frame;
+            if (minmea_parse_rmc(&frame, g_line_buffer.data())) {
+                gps::Data data = {esp_timer_get_time(), frame};
+                storage::postGpsData(data);
+            }
+            break;
+        }
+        case MINMEA_SENTENCE_GLL: {
+            struct minmea_sentence_gll frame;
+            if (minmea_parse_gll(&frame, g_line_buffer.data())) {
+                gps::Data data = {esp_timer_get_time(), frame};
+                storage::postGpsData(data);
+            }
+            break;
+        }
+        case MINMEA_SENTENCE_VTG: {
+            struct minmea_sentence_vtg frame;
+            if (minmea_parse_vtg(&frame, g_line_buffer.data())) {
+                gps::Data data = {esp_timer_get_time(), frame};
+                storage::postGpsData(data);
+            }
+            break;
+        }
+        default:
+            break;
     }
 }
 
@@ -134,7 +176,7 @@ void init() {
         .rx_flow_ctrl_thresh =
             112,  // Not used but must be defined. Default HardwareSerial value.
         .source_clk = UART_SCLK_APB,  // Default clock source
-    };
+        .flags = {}};
 
     uart_driver_install(UART_BUS_NUMBER, UART_BUFFER_SIZE, 0, UART_QUEUE_SIZE,
                         &g_uart_queue, 0);

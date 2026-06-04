@@ -81,6 +81,7 @@ auto init() -> std::expected<Success, Error> {
             lsm6dso_i3c_disable_set(&g_sensor_ctx, LSM6DSO_I3C_DISABLE);
             lsm6dso_block_data_update_set(&g_sensor_ctx, PROPERTY_ENABLE);
 
+            // On our chip (LSM6DSO32) this is effectively 32g range!
             lsm6dso_xl_full_scale_set(&g_sensor_ctx, LSM6DSO_16g);
             lsm6dso_gy_full_scale_set(&g_sensor_ctx, LSM6DSO_2000dps);
 
@@ -116,6 +117,7 @@ auto readAndProcessData() -> std::expected<Success, Error> {
     uint16_t data_count = 0;
 
     if (not g_initialized) {
+        init();
         return std::unexpected(Error::LSM6DSO_INIT_FAILED);
     };
 

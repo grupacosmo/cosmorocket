@@ -1,12 +1,14 @@
 #pragma once
 
+#include <cstdint>
 #include <expected>
 
 #include "common.h"
 
 namespace bme280 {
 
-struct Data {
+struct __attribute__((packed)) Data {
+    int64_t timestamp;
     float air_pressure;
     float humidity;
     float temperature;

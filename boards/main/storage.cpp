@@ -12,7 +12,7 @@
 #include <expected>
 #include <string>
 #include <tuple>
-#include <vector>
+#include <variant>
 
 #include "common.h"
 #include "esp_err.h"
@@ -35,7 +35,7 @@ constexpr const char *ANGULAR_RATE_FILENAME = "ANGULAR_RATE.BIN";
 constexpr const char *GPS_FILENAME = "GPS.BIN";
 
 // 1000ms delay between data flushes
-static constexpr inline int DATA_FLUSH_INTERVAL = 4000;
+static constexpr inline int DATA_FLUSH_INTERVAL = 1000;
 
 // Thread safe (atomic) Single Producer Single Consumer ring buffer
 SPSCQueue<bme280::Data, 128> g_barometer_data_buffer;
@@ -64,12 +64,16 @@ static auto openFile(const char *filename) -> std::expected<FILE *, Error> {
 }
 
 auto flushPressureTemperature() -> std::expected<Success, Error> {
+    bool first = true;
     while (not g_barometer_data_buffer.empty()) {
         bme280::Data data{};
         g_barometer_data_buffer.pop(data);
 
-        ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
-                 data.humidity, data.temperature);
+        if (first) {
+            ESP_LOGI(TAG, "%6.2fPa, %2.2f%%, %2.2fC", data.air_pressure,
+                     data.humidity, data.temperature);
+            first = false;
+        }
 
         if (fwrite(reinterpret_cast<const char *>(&data), sizeof(bme280::Data),
                    1, g_pressure_temp_file) == 0) {
@@ -87,7 +91,7 @@ auto flushAcceleration() -> std::expected<Success, Error> {
         std::array<int16_t, 3> data{};
         g_acceleration_buffer.pop(data);
 
-        if (cnt < 5)
+        if (cnt < 1)
             ESP_LOGI(TAG, "Acceleration: X: %6d Y: %6d Z: %6d", data[0],
                      data[1], data[2]);
 
@@ -99,7 +103,7 @@ auto flushAcceleration() -> std::expected<Success, Error> {
 
         cnt++;
     }
-    // ESP_LOGI(TAG, "And %d more records", cnt - 5);
+    ESP_LOGI(TAG, "Read %d records", cnt);
 
     return Success{};
 }
@@ -110,7 +114,7 @@ auto flushAngularRate() -> std::expected<Success, Error> {
         std::array<int16_t, 3> data{};
         g_angular_rate_buffer.pop(data);
 
-        if (cnt < 5)
+        if (cnt < 1)
             ESP_LOGI(TAG, "Acceleration: X: %6d Y: %6d Z: %6d", data[0],
                      data[1], data[2]);
 
@@ -122,7 +126,7 @@ auto flushAngularRate() -> std::expected<Success, Error> {
 
         cnt++;
     }
-    // ESP_LOGI(TAG, "And %d more records", cnt - 5);
+    ESP_LOGI(TAG, "Read %d records", cnt);
 
     return Success{};
 }
@@ -133,11 +137,17 @@ auto flushGPS() -> std::expected<Success, Error> {
         gps::Data data{};
         g_gps_data_buffer.pop(data);
 
-        if (fwrite(reinterpret_cast<const char *>(data.data()),
-                   sizeof(gps::Data), 1, g_gps_file) == 0) {
-            ESP_LOGE(TAG, "Error writing to file");
-            return std::unexpected(Error::STORAGE_FILE_WRITE_FAILED);
-        }
+        fwrite(reinterpret_cast<const char *>(&data.timestamp),
+               sizeof(data.timestamp), 1, g_gps_file);
+        const uint8_t type = static_cast<uint8_t>(data.parsed_data.index());
+        fwrite(&type, sizeof(type), 1, g_gps_file);
+        std::visit(
+            [](const auto &data_specific) {
+                fwrite(reinterpret_cast<const char *>(&data_specific),
+                       sizeof(data_specific), 1, g_gps_file);
+            },
+            data.parsed_data);
+
         cnt++;
     }
 
@@ -188,13 +198,13 @@ static void flushTask(void *pvParameters) {
 }
 
 static auto initFilesystem() -> std::expected<Success, Error> {
-    esp_vfs_littlefs_conf_t conf = {
-        .base_path = "/littlefs",
-        .partition_label = PARTITION_LABEL,
-        .partition = nullptr,
-        .format_if_mount_failed = 1,
-        .dont_mount = 0,
-    };
+    esp_vfs_littlefs_conf_t conf = {.base_path = "/littlefs",
+                                    .partition_label = PARTITION_LABEL,
+                                    .partition = nullptr,
+                                    .format_if_mount_failed = 1,
+                                    .read_only = false,
+                                    .dont_mount = 0,
+                                    .grow_on_mount = 0};
 
     // mainSemaphoreTake();
 

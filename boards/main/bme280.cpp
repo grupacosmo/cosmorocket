@@ -8,6 +8,7 @@
 #include "BME280_SensorAPI/bme280.h"
 #include "common.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "i2c_device.h"
 #include "sdkconfig.h"
 #include "storage.h"
@@ -97,10 +98,12 @@ auto init() -> std::expected<Success, Error> {
 }
 
 static auto readData() -> std::expected<Data, Error> {
-    Data data{};
     if (not g_initialized) {
+        init();
         return std::unexpected(Error::BME280_INIT_FAILED);
     }
+
+    Data data{};
 
     struct bme280_data raw_data{};
     if (bme280_get_sensor_data(BME280_PRESS, &raw_data, &g_sensor) != 0) {
@@ -118,6 +121,8 @@ static auto readData() -> std::expected<Data, Error> {
         return std::unexpected(Error::BME280_READ_FAILED);
     }
     data.temperature = static_cast<float>(raw_data.temperature);
+
+    data.timestamp = esp_timer_get_time();
 
     return data;
 }
