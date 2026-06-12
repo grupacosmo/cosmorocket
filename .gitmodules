@@ -10,3 +10,6 @@
 [submodule "boards/components/minmea/minmea"]
 	path = boards/components/minmea/minmea
 	url = https://github.com/kosma/minmea.git
+[submodule "boards/components/esp-idf-sx126x-minimal/esp-idf-sx126x-minimal"]
+	path = boards/components/esp-idf-sx126x-minimal/esp-idf-sx126x-minimal
+	url = https://github.com/miszaklajent/esp-idf-sx126x-minimal.git
