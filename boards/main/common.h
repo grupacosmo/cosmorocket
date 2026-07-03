@@ -27,6 +27,8 @@ enum class Error : uint8_t {
     STORAGE_FILE_WRITE_FAILED,
 
     MAIN_SEMAPHORE_INIT_FAILED = 0x50,
+
+    LORA_INIT_FAILED = 0x60,
 };
 
 auto mainSemaphoreInit() -> std::expected<Success, Error>;

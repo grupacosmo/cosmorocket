@@ -11,6 +11,7 @@
 #include "common.h"
 #include "esp_log.h"
 #include "i2c_device.h"
+#include "lora.h"
 #include "sdkconfig.h"
 #include "storage.h"
 
@@ -142,8 +143,9 @@ auto readAndProcessData() -> std::expected<Success, Error> {
                                              raw_data_buffer.data()) != 0) {
                     return std::unexpected(Error::LSM6DSO_READ_FAILED);
                 }
-                storage::postAccelerationData(
-                    convertToSignedShort(raw_data_buffer));
+                auto converted = convertToSignedShort(raw_data_buffer);
+                storage::postAccelerationData(converted);
+                lora::postAccelerationData(converted);
                 break;
             }
             case LSM6DSO_GYRO_NC_TAG: {
@@ -151,8 +153,9 @@ auto readAndProcessData() -> std::expected<Success, Error> {
                                              raw_data_buffer.data()) != 0) {
                     return std::unexpected(Error::LSM6DSO_READ_FAILED);
                 }
-                storage::postAngularRateData(
-                    convertToSignedShort(raw_data_buffer));
+                auto converted = convertToSignedShort(raw_data_buffer);
+                storage::postAngularRateData(converted);
+                lora::postAngularRateData(converted);
                 break;
             }
             default: {

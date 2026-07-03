@@ -12,6 +12,7 @@
 
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "lora.h"
 #include "storage.h"
 
 namespace gps {
@@ -69,13 +70,13 @@ static void readLine() {
 
     switch (minmea_sentence_id(g_line_buffer.data(), false)) {
         case MINMEA_SENTENCE_GGA: {  // sentence of type GGA contains altitude
-            struct minmea_sentence_gga frame;
+            struct minmea_sentence_gga frame{};
             if (minmea_parse_gga(&frame, g_line_buffer.data())) {
-                gps::Data data = {esp_timer_get_time(), frame};
+                gps::Data data = {.timestamp = esp_timer_get_time(),
+                                  .parsed_data = frame};
                 storage::postGpsData(data);
 
-                std::array<char, 128> text;
-                std::ranges::fill(text, 0);
+                std::array<char, 128> text{};
                 std::format_to_n(
                     text.begin(), text.size() - 1,
                     "{:02d}:{:02d}:{:02d}.{:d} {} {} alt: {}", frame.time.hours,
@@ -87,26 +88,32 @@ static void readLine() {
             break;
         }
         case MINMEA_SENTENCE_RMC: {
-            struct minmea_sentence_rmc frame;
+            struct minmea_sentence_rmc frame{};
             if (minmea_parse_rmc(&frame, g_line_buffer.data())) {
-                gps::Data data = {esp_timer_get_time(), frame};
+                gps::Data data = {.timestamp = esp_timer_get_time(),
+                                  .parsed_data = frame};
                 storage::postGpsData(data);
+                lora::postGpsData(data);
             }
             break;
         }
         case MINMEA_SENTENCE_GLL: {
-            struct minmea_sentence_gll frame;
+            struct minmea_sentence_gll frame{};
             if (minmea_parse_gll(&frame, g_line_buffer.data())) {
-                gps::Data data = {esp_timer_get_time(), frame};
+                gps::Data data = {.timestamp = esp_timer_get_time(),
+                                  .parsed_data = frame};
                 storage::postGpsData(data);
+                lora::postGpsData(data);
             }
             break;
         }
         case MINMEA_SENTENCE_VTG: {
             struct minmea_sentence_vtg frame;
             if (minmea_parse_vtg(&frame, g_line_buffer.data())) {
-                gps::Data data = {esp_timer_get_time(), frame};
+                gps::Data data = {.timestamp = esp_timer_get_time(),
+                                  .parsed_data = frame};
                 storage::postGpsData(data);
+                lora::postGpsData(data);
             }
             break;
         }

@@ -10,6 +10,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "i2c_device.h"
+#include "lora.h"
 #include "sdkconfig.h"
 #include "storage.h"
 
@@ -128,12 +129,12 @@ static auto readData() -> std::expected<Data, Error> {
 }
 
 auto readAndProcessData() -> std::expected<Success, Error> {
-    auto ret = readData();
-
-    return ret.and_then([](Data const &data) -> std::expected<Success, Error> {
-        storage::postBarometerData(data);
-        return Success{};
-    });
+    return readData().and_then(
+        [](Data const &data) -> std::expected<Success, Error> {
+            storage::postBarometerData(data);
+            lora::postBarometerData(data);
+            return Success{};
+        });
 }
 
 }  // namespace bme280

@@ -31,6 +31,36 @@ menu "Rocket board configuration"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
         default 16
 
+    config LORA_NSS_GPIO
+        int "LORA NSS GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 5
+
+    config LORA_SCK_GPIO
+        int "LORA SCK GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 6
+
+    config LORA_MOSI_GPIO
+        int "LORA MOSI GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 7
+
+    config LORA_MISO_GPIO
+        int "LORA MISO GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 8
+
+    config LORA_NRST_GPIO
+        int "LORA MRST GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 9
+
+    config LORA_BUSY_GPIO
+        int "LORA BUSY GPIO number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 10
+
     config GPS_UART_BAUDRATE
         int "GPS UART RX baudrate"
         range 9600 1000000

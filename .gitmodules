@@ -13,3 +13,6 @@
 [submodule "boards/components/esp-idf-sx126x-minimal/esp-idf-sx126x-minimal"]
 	path = boards/components/esp-idf-sx126x-minimal/esp-idf-sx126x-minimal
 	url = https://github.com/miszaklajent/esp-idf-sx126x-minimal.git
+[submodule "boards/components/triplebuffer-sync/triplebuffer-sync"]
+	path = boards/components/triplebuffer-sync/triplebuffer-sync
+	url = https://github.com/p4checo/triplebuffer-sync.git

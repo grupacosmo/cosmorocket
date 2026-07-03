@@ -6,6 +6,7 @@
 #include "freertos/projdefs.h"
 #include "gps.h"
 #include "i2c.h"
+#include "lora.h"
 #include "lsm6dso.h"
 #include "storage.h"
 
@@ -22,7 +23,7 @@ extern "C" void app_main(void) {
 
     vTaskDelay(15000 / portTICK_PERIOD_MS);
 
-    if (!mainSemaphoreInit().has_value()) {
+    if (not mainSemaphoreInit().has_value()) {
         return;
     }
 
@@ -51,12 +52,7 @@ extern "C" void app_main(void) {
     if (xTaskCreatePinnedToCore(sensorReadTask, "SENSOR_READ_TASK",
                                 /* usStackDepth = */ 4096 * 16,
                                 sensor_read_semaphore,
-                                /* uxPriority = */ 15, nullptr, 0) != pdPASS) {
-        ESP_LOGE(TAG, "Failed to create sensor read RTOS task");
-        while (true) {
-            vTaskDelay(50 / portTICK_PERIOD_MS);
-        }
-    } else {
+                                /* uxPriority = */ 15, nullptr, 0) == pdPASS) {
         const esp_timer_create_args_t timer_config = {
             .callback = mainLoopTimerCallback,
             .arg = sensor_read_semaphore,
@@ -70,6 +66,9 @@ extern "C" void app_main(void) {
                      "anyways",
                      res);
         }
+    } else {
+        ESP_LOGE(TAG,
+                 "Failed to create sensor read RTOS task. Proceeding anyways");
     }
 
     if (not storage::init().has_value()) {
@@ -90,8 +89,13 @@ extern "C" void app_main(void) {
 
     gps::init();
 
+    if (not lora::init().has_value()) {
+        ESP_LOGE(TAG, "Initializing LORA failed. Proceeding anyways");
+    }
+
     while (true) {
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "Main Loop");
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 
